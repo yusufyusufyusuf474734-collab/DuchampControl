@@ -214,6 +214,7 @@ fun AppListItem(app: AppInfo, onClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppDetailDialog(
     app: AppInfo,

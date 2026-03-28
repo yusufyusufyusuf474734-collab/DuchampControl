@@ -292,7 +292,7 @@ object DeviceInfo {
 
     // Display
     fun getDisplayInfo(): DisplayInfo {
-        val rate = RootUtils.runCommand("dumpsys display | grep 'mRefreshRate' | head -1 | awk '{print $NF}'")
+        val rate = RootUtils.runCommand("dumpsys display | grep 'mRefreshRate' | head -1 | awk '{print $" + "NF}'")
         val hbm = RootUtils.readSysfs("/sys/class/drm/card0-DSI-1/hbm_mode")
         val dc = RootUtils.readSysfs("/sys/class/drm/card0-DSI-1/dc_mode")
         val color = RootUtils.readSysfs("/sys/class/drm/card0-DSI-1/color_mode")

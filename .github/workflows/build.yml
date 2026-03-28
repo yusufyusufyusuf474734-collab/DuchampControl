@@ -44,7 +44,13 @@ jobs:
 
       - name: Show Kotlin errors
         if: always()
-        run: grep -E "^e:|error:|\.kt:[0-9]" build.log | head -80 || echo "No Kotlin errors found in log"
+        run: |
+          echo "=== KOTLIN ERRORS ==="
+          grep -n "^e: " build.log || true
+          echo "=== ALL ERRORS ==="
+          grep -n "error:" build.log | grep -v "^Binary" || true
+          echo "=== LAST 50 LINES ==="
+          tail -50 build.log
 
       - name: Upload build log
         if: always()
