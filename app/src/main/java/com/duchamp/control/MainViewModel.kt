@@ -26,7 +26,9 @@ class MainViewModel(context: Context) : ViewModel() {
             appTheme = AppPrefs.theme,
             accentColorIndex = AppPrefs.accentColorIndex,
             dashboardCompact = AppPrefs.dashboardCompact,
-            scheduleRules = AppPrefs.loadScheduleRules()
+            scheduleRules = AppPrefs.loadScheduleRules(),
+            kernelKitInstalled = KernelKitInstaller.isInstalled(),
+            kernelKitEnabled = KernelKitInstaller.isEnabled()
         )
         loadAll()
         startScheduler()
@@ -94,6 +96,19 @@ class MainViewModel(context: Context) : ViewModel() {
     fun setCpuMinFreq(freqKhz: String) = update {
         DeviceInfo.setCpuMinFreq(freqKhz)
         _state.value.copy(cpuInfo = DeviceInfo.getCpuInfo(), statusMessage = "CPU min frekans ayarlandı")
+    }
+    // Tek çekirdek max frekans
+    fun setCpuMaxFreqSingle(core: Int, freqKhz: String) = update {
+        RootUtils.writeFile("/sys/devices/system/cpu/cpu$core/cpufreq/scaling_max_freq", freqKhz)
+        val mhz = freqKhz.toLongOrNull()?.let { "${it / 1000} MHz" } ?: freqKhz
+        _state.value.copy(cpuInfo = DeviceInfo.getCpuInfo(),
+            statusMessage = "cpu$core max: $mhz")
+    }
+    // Prime çekirdeği tam frekansına aç
+    fun unlockPrimeCore() = update {
+        DeviceInfo.unlockPrimeCore()
+        _state.value.copy(cpuInfo = DeviceInfo.getCpuInfo(),
+            statusMessage = "Prime (cpu7) 3350 MHz'e açıldı")
     }
     fun setGpuGovernor(gov: String) = update {
         DeviceInfo.setGpuGovernor(gov)
@@ -350,6 +365,33 @@ class MainViewModel(context: Context) : ViewModel() {
                 delay(60_000)
             }
         }
+    }
+
+    // KernelKit Modül
+    fun installKernelKit() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.value = _state.value.copy(statusMessage = "Modül kuruluyor...")
+            val (ok, msg) = KernelKitInstaller.install(context)
+            _state.value = _state.value.copy(
+                kernelKitInstalled = KernelKitInstaller.isInstalled(),
+                kernelKitEnabled = KernelKitInstaller.isEnabled(),
+                statusMessage = msg
+            )
+        }
+    }
+    fun uninstallKernelKit() = update {
+        KernelKitInstaller.uninstall()
+        _state.value.copy(
+            kernelKitInstalled = false,
+            kernelKitEnabled = false,
+            statusMessage = "KernelKit modülü kaldırıldı. Yeniden başlatın."
+        )
+    }
+    fun refreshKernelKitStatus() = update {
+        _state.value.copy(
+            kernelKitInstalled = KernelKitInstaller.isInstalled(),
+            kernelKitEnabled = KernelKitInstaller.isEnabled()
+        )
     }
 
     // Yardımcılar

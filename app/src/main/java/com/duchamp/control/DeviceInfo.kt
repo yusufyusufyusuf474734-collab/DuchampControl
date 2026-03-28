@@ -9,7 +9,7 @@ import com.duchamp.control.RootUtils.uvToMv
 
 // ── Data models ──────────────────────────────────────────────────────────────
 
-data class CoreInfo(val id: Int, val freqMhz: String, val online: Boolean)
+data class CoreInfo(val id: Int, val freqMhz: String, val online: Boolean, val cluster: String)
 
 data class CpuInfo(
     val governor: String,
@@ -19,7 +19,22 @@ data class CpuInfo(
     val availableGovernors: List<String>,
     val availableFreqs: List<String>,
     val cores: List<CoreInfo>,
-    val schedTunables: Map<String, String>
+    val schedTunables: Map<String, String>,
+    // MT6897 cluster bazlı bilgi
+    val clusterLittle: ClusterInfo,   // cpu0-3: A510 efficiency
+    val clusterBig: ClusterInfo,      // cpu4-6: A715 performance
+    val clusterPrime: ClusterInfo     // cpu7:   A715 prime
+)
+
+data class ClusterInfo(
+    val name: String,
+    val coreType: String,
+    val coreRange: String,
+    val curFreqMhz: String,
+    val maxFreqMhz: String,
+    val minFreqMhz: String,
+    val maxFreqKhz: String,
+    val availableFreqs: List<String>
 )
 
 data class GpuInfo(
@@ -118,24 +133,70 @@ object DeviceInfo {
         "Fingerprint" to Build.FINGERPRINT.take(60)
     )
 
-    // CPU
+    // CPU — MT6897 cluster yapısı:
+    // cpu0-3: Cortex-A510 (efficiency) → max 2200 MHz  → policy0
+    // cpu4-6: Cortex-A715 (performance) → max 3200 MHz → policy4
+    // cpu7:   Cortex-A715 (prime)       → max 3350 MHz → policy7
     fun getCpuInfo(): CpuInfo {
-        val base = "/sys/devices/system/cpu/cpu0/cpufreq"
-        val governor = RootUtils.readSysfs("$base/scaling_governor")
-        val curFreq = RootUtils.readSysfs("$base/scaling_cur_freq").toLongOrNull()?.khzToMhz() ?: "N/A"
-        val maxFreq = RootUtils.readSysfs("$base/scaling_max_freq").toLongOrNull()?.khzToMhz() ?: "N/A"
-        val minFreq = RootUtils.readSysfs("$base/scaling_min_freq").toLongOrNull()?.khzToMhz() ?: "N/A"
-        val governors = RootUtils.readSysfs("$base/scaling_available_governors").split(" ").filter { it.isNotBlank() }
-        val freqs = RootUtils.readSysfs("$base/scaling_available_frequencies")
+        // policy bazlı okuma (modülle uyumlu)
+        fun policy(p: Int, file: String) =
+            RootUtils.readSysfs("/sys/devices/system/cpu/cpufreq/policy$p/$file")
+        // fallback: cpu bazlı
+        fun sysfs(cpu: Int, file: String) =
+            RootUtils.readSysfs("/sys/devices/system/cpu/cpu$cpu/cpufreq/$file")
+
+        fun readFreq(p: Int, file: String): String {
+            val v = policy(p, file).ifEmpty { sysfs(p, file) }
+            return v.toLongOrNull()?.khzToMhz() ?: "N/A"
+        }
+        fun readFreqKhz(p: Int, file: String): String =
+            policy(p, file).ifEmpty { sysfs(p, file) }
+
+        fun readAvailFreqs(p: Int): List<String> {
+            val raw = policy(p, "scaling_available_frequencies").ifEmpty {
+                sysfs(p, "scaling_available_frequencies")
+            }
+            return raw.split(" ").filter { it.isNotBlank() }
+                .map { it.toLongOrNull()?.khzToMhz() ?: it }
+        }
+
+        val little = ClusterInfo(
+            name = "Little", coreType = "Cortex-A510", coreRange = "cpu0-3",
+            curFreqMhz = readFreq(0, "scaling_cur_freq"),
+            maxFreqMhz = readFreq(0, "scaling_max_freq"),
+            minFreqMhz = readFreq(0, "scaling_min_freq"),
+            maxFreqKhz = readFreqKhz(0, "scaling_max_freq").ifEmpty { "2200000" },
+            availableFreqs = readAvailFreqs(0)
+        )
+        val big = ClusterInfo(
+            name = "Big", coreType = "Cortex-A715", coreRange = "cpu4-6",
+            curFreqMhz = readFreq(4, "scaling_cur_freq"),
+            maxFreqMhz = readFreq(4, "scaling_max_freq"),
+            minFreqMhz = readFreq(4, "scaling_min_freq"),
+            maxFreqKhz = readFreqKhz(4, "scaling_max_freq").ifEmpty { "3200000" },
+            availableFreqs = readAvailFreqs(4)
+        )
+        val prime = ClusterInfo(
+            name = "Prime", coreType = "Cortex-A715", coreRange = "cpu7",
+            curFreqMhz = readFreq(7, "scaling_cur_freq"),
+            maxFreqMhz = readFreq(7, "scaling_max_freq"),
+            minFreqMhz = readFreq(7, "scaling_min_freq"),
+            maxFreqKhz = readFreqKhz(7, "scaling_max_freq").ifEmpty { "3350000" },
+            availableFreqs = readAvailFreqs(7)
+        )
+
+        val governor = policy(0, "scaling_governor").ifEmpty { sysfs(0, "scaling_governor") }
+        val governors = policy(0, "scaling_available_governors")
+            .ifEmpty { sysfs(0, "scaling_available_governors") }
             .split(" ").filter { it.isNotBlank() }
-            .map { it.toLongOrNull()?.khzToMhz() ?: it }
 
         val coreCount = Runtime.getRuntime().availableProcessors()
         val cores = (0 until coreCount).map { i ->
             val online = RootUtils.readSysfs("/sys/devices/system/cpu/cpu$i/online") == "1"
-            val freq = RootUtils.readSysfs("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq")
-                .toLongOrNull()?.khzToMhz() ?: "offline"
-            CoreInfo(i, freq, online || i == 0)
+            val policyId = when (i) { in 0..3 -> 0; in 4..6 -> 4; else -> 7 }
+            val freq = readFreq(policyId, "scaling_cur_freq")
+            val cluster = when (i) { in 0..3 -> "Little"; in 4..6 -> "Big"; 7 -> "Prime"; else -> "?" }
+            CoreInfo(i, freq, online || i == 0, cluster)
         }
 
         val schedTunables = mapOf(
@@ -144,52 +205,91 @@ object DeviceInfo {
             "sched_min_granularity_ns" to RootUtils.readSysfs("/proc/sys/kernel/sched_min_granularity_ns")
         )
 
-        return CpuInfo(governor, curFreq, maxFreq, minFreq, governors, freqs, cores, schedTunables)
+        return CpuInfo(
+            governor = governor,
+            curFreqMhz = prime.curFreqMhz,
+            maxFreqMhz = prime.maxFreqMhz,
+            minFreqMhz = little.minFreqMhz,
+            availableGovernors = governors,
+            availableFreqs = prime.availableFreqs,
+            cores = cores,
+            schedTunables = schedTunables,
+            clusterLittle = little,
+            clusterBig = big,
+            clusterPrime = prime
+        )
     }
 
     fun setCpuGovernor(gov: String): Boolean {
-        val coreCount = Runtime.getRuntime().availableProcessors()
         var ok = true
-        for (i in 0 until coreCount) {
-            if (!RootUtils.writeFile("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor", gov)) ok = false
+        // policy bazlı (modülle uyumlu)
+        for (p in listOf(0, 4, 7)) {
+            if (!RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy$p/scaling_governor", gov)) ok = false
         }
         return ok
     }
 
-    fun setCpuMaxFreq(freqKhz: String): Boolean {
-        val coreCount = Runtime.getRuntime().availableProcessors()
+    fun setCpuMaxFreqCluster(littleKhz: String, bigKhz: String, primeKhz: String): Boolean {
         var ok = true
-        for (i in 0 until coreCount) {
-            if (!RootUtils.writeFile("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_max_freq", freqKhz)) ok = false
-        }
+        if (!RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq", littleKhz)) ok = false
+        if (!RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq", bigKhz)) ok = false
+        if (!RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy7/scaling_max_freq", primeKhz)) ok = false
         return ok
     }
 
-    fun setCpuMinFreq(freqKhz: String): Boolean {
-        val coreCount = Runtime.getRuntime().availableProcessors()
+    fun setCpuMaxFreq(freqKhz: String): Boolean = setCpuMaxFreqCluster(freqKhz, freqKhz, freqKhz)
+
+    fun setCpuMinFreqCluster(littleKhz: String, bigKhz: String, primeKhz: String): Boolean {
         var ok = true
-        for (i in 0 until coreCount) {
-            if (!RootUtils.writeFile("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_min_freq", freqKhz)) ok = false
-        }
+        if (!RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq", littleKhz)) ok = false
+        if (!RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy4/scaling_min_freq", bigKhz)) ok = false
+        if (!RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy7/scaling_min_freq", primeKhz)) ok = false
         return ok
     }
 
-    // GPU
+    fun setCpuMinFreq(freqKhz: String): Boolean = setCpuMinFreqCluster(freqKhz, freqKhz, freqKhz)
+
+    fun setCpuMaxFreqSingle(policyOrCore: Int, freqKhz: String): Boolean {
+        val policy = when (policyOrCore) { in 0..3 -> 0; in 4..6 -> 4; else -> 7 }
+        return RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy$policy/scaling_max_freq", freqKhz)
+    }
+
+    fun unlockPrimeCore(): Boolean =
+        RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy7/scaling_max_freq", "3350000")
+
+    // GPU — Mali G615-MC6
+    // GPU path: /sys/devices/platform/soc/13000000.mali/devfreq/13000000.mali
     fun getGpuInfo(): GpuInfo {
-        val base = "/sys/class/misc/mali0/device/devfreq/devfreq0"
-        val gov = RootUtils.readSysfs("$base/governor")
-        val cur = RootUtils.readSysfs("$base/cur_freq").toLongOrNull()?.hzToMhz() ?: "N/A"
-        val max = RootUtils.readSysfs("$base/max_freq").toLongOrNull()?.hzToMhz() ?: "N/A"
-        val min = RootUtils.readSysfs("$base/min_freq").toLongOrNull()?.hzToMhz() ?: "N/A"
-        val util = RootUtils.readSysfs("/sys/class/misc/mali0/device/utilization").let {
+        val base = "/sys/devices/platform/soc/13000000.mali/devfreq/13000000.mali"
+        val fallback = "/sys/class/misc/mali0/device/devfreq/devfreq0"
+        val path = if (RootUtils.runCommand("[ -d $base ] && echo 1 || echo 0") == "1") base else fallback
+        val gov = RootUtils.readSysfs("$path/governor")
+        val cur = RootUtils.readSysfs("$path/cur_freq").toLongOrNull()?.hzToMhz() ?: "N/A"
+        val max = RootUtils.readSysfs("$path/max_freq").toLongOrNull()?.hzToMhz() ?: "N/A"
+        val min = RootUtils.readSysfs("$path/min_freq").toLongOrNull()?.hzToMhz() ?: "N/A"
+        val util = RootUtils.readSysfs("$path/../utilization").let {
             if (it != "N/A") "$it%" else "N/A"
         }
-        val govs = RootUtils.readSysfs("$base/available_governors").split(" ").filter { it.isNotBlank() }
+        val govs = RootUtils.readSysfs("$path/available_governors").split(" ").filter { it.isNotBlank() }
         return GpuInfo(gov, cur, max, min, util, govs)
     }
 
-    fun setGpuGovernor(gov: String): Boolean =
-        RootUtils.writeFile("/sys/class/misc/mali0/device/devfreq/devfreq0/governor", gov)
+    fun setGpuGovernor(gov: String): Boolean {
+        val base = "/sys/devices/platform/soc/13000000.mali/devfreq/13000000.mali"
+        val fallback = "/sys/class/misc/mali0/device/devfreq/devfreq0"
+        val path = if (RootUtils.runCommand("[ -d $base ] && echo 1 || echo 0") == "1") base else fallback
+        return RootUtils.writeFile("$path/governor", gov)
+    }
+
+    fun setGpuMaxFreq(hz: String): Boolean {
+        val base = "/sys/devices/platform/soc/13000000.mali/devfreq/13000000.mali"
+        return RootUtils.writeFile("$base/max_freq", hz)
+    }
+
+    fun setGpuMinFreq(hz: String): Boolean {
+        val base = "/sys/devices/platform/soc/13000000.mali/devfreq/13000000.mali"
+        return RootUtils.writeFile("$base/min_freq", hz)
+    }
 
     // Battery
     fun getBatteryInfo(): BatteryInfo {
@@ -883,4 +983,88 @@ object SecurityManager {
 
     fun removeUserCert(hash: String): Boolean =
         RootUtils.runCommand("rm /data/misc/user/0/cacerts-added/$hash").let { true }
+}
+
+// ── KernelKit Modül Kurulumu ─────────────────────────────────────────────────
+
+object KernelKitInstaller {
+
+    private const val MODULE_NAME = "KernelKit-FreqUnlock-v0.1.zip"
+    private const val MODULE_ID   = "kernelkit_freq"
+
+    fun isInstalled(): Boolean {
+        val magisk = RootUtils.runCommand("[ -d /data/adb/modules/$MODULE_ID ] && echo 1 || echo 0")
+        val ksu    = RootUtils.runCommand("[ -d /data/adb/ksu/modules/$MODULE_ID ] && echo 1 || echo 0")
+        return magisk == "1" || ksu == "1"
+    }
+
+    fun isEnabled(): Boolean {
+        val magiskDisabled = RootUtils.runCommand("[ -f /data/adb/modules/$MODULE_ID/disable ] && echo 1 || echo 0")
+        val ksuDisabled    = RootUtils.runCommand("[ -f /data/adb/ksu/modules/$MODULE_ID/disable ] && echo 1 || echo 0")
+        return magiskDisabled != "1" && ksuDisabled != "1" && isInstalled()
+    }
+
+    fun getRootType(): String {
+        val magisk = RootUtils.runCommand("magisk -v 2>/dev/null")
+        val ksu    = RootUtils.runCommand("ksud -V 2>/dev/null")
+        return when {
+            magisk.isNotEmpty() && !magisk.contains("not found") -> "Magisk"
+            ksu.isNotEmpty()    && !ksu.contains("not found")    -> "KernelSU"
+            else -> "Unknown"
+        }
+    }
+
+    // APK assets'ten cihaza kopyala ve kur
+    fun install(context: android.content.Context): Pair<Boolean, String> {
+        return try {
+            // 1. Assets'ten /data/local/tmp'ye kopyala
+            val tmpPath = "/data/local/tmp/$MODULE_NAME"
+            val bytes = context.assets.open(MODULE_NAME).readBytes()
+            val tmpFile = java.io.File(context.cacheDir, MODULE_NAME)
+            tmpFile.writeBytes(bytes)
+
+            // 2. Root ile tmp'ye taşı
+            RootUtils.runCommand("cp '${tmpFile.absolutePath}' '$tmpPath'")
+            RootUtils.runCommand("chmod 644 '$tmpPath'")
+
+            // 3. Root tipine göre kur
+            val rootType = getRootType()
+            val result = when (rootType) {
+                "Magisk" -> {
+                    val out = RootUtils.runCommand("magisk --install-module '$tmpPath' 2>&1")
+                    if (out.contains("Done") || out.contains("Success") || out.isEmpty()) {
+                        // Magisk modül dizinine manuel kopyala (fallback)
+                        RootUtils.runCommand("mkdir -p /data/adb/modules/$MODULE_ID")
+                        RootUtils.runCommand("unzip -o '$tmpPath' -d /data/adb/modules/$MODULE_ID 2>&1")
+                        true to "Magisk modülü kuruldu. Yeniden başlatın."
+                    } else {
+                        false to "Magisk kurulum hatası: $out"
+                    }
+                }
+                "KernelSU" -> {
+                    RootUtils.runCommand("mkdir -p /data/adb/ksu/modules/$MODULE_ID")
+                    val out = RootUtils.runCommand("unzip -o '$tmpPath' -d /data/adb/ksu/modules/$MODULE_ID 2>&1")
+                    if (!out.contains("error")) {
+                        true to "KernelSU modülü kuruldu. Yeniden başlatın."
+                    } else {
+                        false to "KernelSU kurulum hatası: $out"
+                    }
+                }
+                else -> false to "Root tipi tespit edilemedi"
+            }
+
+            // 4. Temizlik
+            RootUtils.runCommand("rm -f '$tmpPath'")
+            tmpFile.delete()
+            result
+        } catch (e: Exception) {
+            false to "Hata: ${e.message}"
+        }
+    }
+
+    fun uninstall(): Boolean {
+        RootUtils.runCommand("rm -rf /data/adb/modules/$MODULE_ID")
+        RootUtils.runCommand("rm -rf /data/adb/ksu/modules/$MODULE_ID")
+        return true
+    }
 }

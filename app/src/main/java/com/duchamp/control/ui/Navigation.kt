@@ -26,6 +26,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object System       : Screen("system",    "Sistem",            Icons.Default.Settings)
     object Hardware     : Screen("hardware",  "Donanım",           Icons.Default.Hardware)
     object Logcat       : Screen("logcat",    "Logcat",            Icons.Default.Terminal)
+    object About        : Screen("about",     "Hakkında",          Icons.Default.Info)
 }
 
 val bottomNavScreens = listOf(
@@ -69,6 +70,9 @@ val drawerGroups = listOf(
     )),
     DrawerGroup("Kişiselleştirme", listOf(
         Screen.Appearance
+    )),
+    DrawerGroup("Diğer", listOf(
+        Screen.About
     ))
 )
 

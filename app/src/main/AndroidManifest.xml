@@ -19,7 +19,9 @@
 
     <application
         android:allowBackup="true"
-        android:label="Duchamp Control"
+        android:label="DimensityTool"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.DuchampControl"
         android:exported="true">
         <activity

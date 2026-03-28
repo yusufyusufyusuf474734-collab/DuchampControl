@@ -41,7 +41,10 @@ fun DuchampApp(vm: MainViewModel) {
                         tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text("Duchamp Control", style = MaterialTheme.typography.titleMedium)
+                        Text("DimensityTool", style = MaterialTheme.typography.titleMedium)
+                        Text("by Sinan Aslan",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary)
                         Text("Poco X6 Pro / Redmi K70E",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
@@ -107,9 +110,20 @@ fun DuchampApp(vm: MainViewModel) {
                     Spacer(Modifier.height(4.dp))
                 }
                 Spacer(Modifier.height(16.dp))
-            }
-        }
-    ) {
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "© Sinan Aslan",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+                Text(
+                    "DimensityTool v1.0 · MT6897",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)
+                )
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -189,6 +203,7 @@ fun DuchampApp(vm: MainViewModel) {
                 Screen.System       -> SystemScreen(state, vm, m)
                 Screen.Hardware     -> HardwareScreen(state, vm, m)
                 Screen.Logcat       -> LogcatScreen(state, vm, m)
+                Screen.About        -> AboutScreen(m)
                 else                -> DashboardScreen(state, vm, m)
             }
         }

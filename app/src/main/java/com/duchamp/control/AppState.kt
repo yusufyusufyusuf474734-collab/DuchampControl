@@ -41,5 +41,8 @@ data class AppState(
     val dashboardCompact: Boolean = false,
     // Zamanlayıcı
     val scheduleRules: List<ScheduleRule> = emptyList(),
+    // KernelKit modül durumu
+    val kernelKitInstalled: Boolean = false,
+    val kernelKitEnabled: Boolean = false,
     val statusMessage: String = ""
 )
