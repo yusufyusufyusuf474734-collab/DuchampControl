@@ -58,7 +58,7 @@ fun DozeScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifier
                         onClick = { vm.exitDoze() },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.WakeUp, null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.LightMode, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("Doze Çık")
                     }

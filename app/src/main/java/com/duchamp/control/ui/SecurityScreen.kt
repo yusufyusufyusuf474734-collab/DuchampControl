@@ -46,24 +46,24 @@ fun SecurityScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
                             "green"  -> MaterialTheme.colorScheme.primary
                             "orange" -> Color(0xFFFF9800)
                             else     -> MaterialTheme.colorScheme.error
-                        }, Icons.Default.VerifiedUser)
+                        }, Icons.Default.Verified)
 
                     SecurityStatusRow("DM-Verity", sec.dmVerity,
-                        MaterialTheme.colorScheme.onSurface, Icons.Default.Security)
+                        MaterialTheme.colorScheme.onSurface, Icons.Default.Shield)
 
                     SecurityStatusRow("SELinux", sec.selinuxMode,
                         if (sec.selinuxMode == "Enforcing") MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.error,
-                        Icons.Default.Policy)
+                        Icons.Default.GppGood)
 
                     SecurityStatusRow("ADB", if (sec.adbEnabled) "Açık" else "Kapalı",
                         if (sec.adbEnabled) Color(0xFFFF9800) else MaterialTheme.colorScheme.primary,
-                        Icons.Default.Usb)
+                        Icons.Default.Cable)
 
                     SecurityStatusRow("Geliştirici Seçenekleri",
                         if (sec.developerOptions) "Açık" else "Kapalı",
                         if (sec.developerOptions) Color(0xFFFF9800) else MaterialTheme.colorScheme.primary,
-                        Icons.Default.DeveloperMode)
+                        Icons.Default.Code)
 
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = { vm.loadSecurity() }, modifier = Modifier.fillMaxWidth()) {
@@ -94,7 +94,7 @@ fun SecurityScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
 
         // Kullanıcı sertifikaları
         item {
-            SectionCard("Kullanıcı CA Sertifikaları", Icons.Default.Certificate) {
+            SectionCard("Kullanıcı CA Sertifikaları", Icons.Default.VpnKey) {
                 Text(
                     "Sisteme yüklenmiş kullanıcı sertifikaları. Şüpheli sertifikaları kaldırın.",
                     style = MaterialTheme.typography.bodySmall,

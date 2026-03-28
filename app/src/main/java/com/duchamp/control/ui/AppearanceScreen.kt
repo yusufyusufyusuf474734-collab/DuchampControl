@@ -34,7 +34,7 @@ fun AppearanceScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mo
                 val themes = listOf(
                     AppTheme.DARK   to ("Koyu"   to Icons.Default.DarkMode),
                     AppTheme.LIGHT  to ("Açık"   to Icons.Default.LightMode),
-                    AppTheme.SYSTEM to ("Sistem" to Icons.Default.SettingsBrightness)
+                    AppTheme.SYSTEM to ("Sistem" to Icons.Default.Brightness4)
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -147,7 +147,7 @@ fun AppearanceScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mo
 
         // Önizleme
         item {
-            SectionCard("Önizleme", Icons.Default.Preview) {
+            SectionCard("Önizleme", Icons.Default.Visibility) {
                 Text(
                     "Mevcut tema ve renk kombinasyonu",
                     style = MaterialTheme.typography.bodySmall,

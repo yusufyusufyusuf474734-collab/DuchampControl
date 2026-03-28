@@ -151,7 +151,7 @@ fun ProfileParam(label: String, value: String, color: Color, modifier: Modifier 
 @Composable
 fun profileIcon(id: String): ImageVector = when (id) {
     "powersave"   -> Icons.Default.BatterySaver
-    "balanced"    -> Icons.Default.Balance
+    "balanced"    -> Icons.Default.AutoAwesome
     "performance" -> Icons.Default.Speed
     "gaming"      -> Icons.Default.SportsEsports
     else          -> Icons.Default.Tune
