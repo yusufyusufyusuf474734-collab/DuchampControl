@@ -123,7 +123,7 @@ fun SystemScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifi
 
         // NFC
         item {
-            SectionCard("NFC", Icons.Default.Nfc) {
+            SectionCard("NFC", Icons.Default.Contactless) {
                 InfoRow("Çip", "NXP NFC")
                 InfoRow("Özellikler", "HCE, HCEF, ESE, UICC, Mifare")
                 SectionDivider()

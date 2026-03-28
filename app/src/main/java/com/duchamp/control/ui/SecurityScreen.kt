@@ -46,7 +46,7 @@ fun SecurityScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
                             "green"  -> MaterialTheme.colorScheme.primary
                             "orange" -> Color(0xFFFF9800)
                             else     -> MaterialTheme.colorScheme.error
-                        }, Icons.Default.Verified)
+                        }, Icons.Default.CheckCircle)
 
                     SecurityStatusRow("DM-Verity", sec.dmVerity,
                         MaterialTheme.colorScheme.onSurface, Icons.Default.Shield)
@@ -54,11 +54,11 @@ fun SecurityScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
                     SecurityStatusRow("SELinux", sec.selinuxMode,
                         if (sec.selinuxMode == "Enforcing") MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.error,
-                        Icons.Default.GppGood)
+                        Icons.Default.AdminPanelSettings)
 
                     SecurityStatusRow("ADB", if (sec.adbEnabled) "Açık" else "Kapalı",
                         if (sec.adbEnabled) Color(0xFFFF9800) else MaterialTheme.colorScheme.primary,
-                        Icons.Default.Cable)
+                        Icons.Default.SettingsEthernet)
 
                     SecurityStatusRow("Geliştirici Seçenekleri",
                         if (sec.developerOptions) "Açık" else "Kapalı",

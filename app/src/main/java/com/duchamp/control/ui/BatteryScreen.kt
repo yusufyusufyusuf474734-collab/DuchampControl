@@ -35,7 +35,7 @@ fun BatteryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
 
         // Elektriksel değerler
         item {
-            SectionCard("Elektriksel Değerler", Icons.Default.ElectricBolt) {
+            SectionCard("Elektriksel Değerler", Icons.Default.Power) {
                 InfoRow("Sıcaklık", bat.tempC)
                 InfoRow("Voltaj", bat.voltage)
                 InfoRow("Akım", bat.currentNow)

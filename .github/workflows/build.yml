@@ -40,17 +40,23 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build Debug APK
-        run: gradle assembleDebug --stacktrace 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+        run: gradle assembleDebug 2>&1 | tee build.log || true
 
-      - name: Upload build log on failure
-        if: failure()
+      - name: Show Kotlin errors
+        if: always()
+        run: grep -E "^e:|error:|\.kt:[0-9]" build.log | head -80 || echo "No Kotlin errors found in log"
+
+      - name: Upload build log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
 
+      - name: Fail if build failed
+        run: grep -q "BUILD SUCCESSFUL" build.log
+
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: DuchampControl-debug

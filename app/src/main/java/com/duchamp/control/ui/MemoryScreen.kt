@@ -69,7 +69,7 @@ fun MemoryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifi
 
         // ZRAM
         item {
-            SectionCard("ZRAM", Icons.Default.Compress) {
+            SectionCard("ZRAM", Icons.Default.LayersClear) {
                 InfoRow("Boyut", mem.zramSizeGb)
                 InfoRow("Kullanılan", mem.zramUsedMb)
                 InfoRow("Algoritma", mem.zramAlgo)
@@ -117,7 +117,7 @@ fun MemoryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifi
         // Depolama
         if (state.storageInfo.isNotEmpty()) {
             item {
-                SectionCard("Depolama Bölümleri", Icons.Default.SdStorage) {
+                SectionCard("Depolama Bölümleri", Icons.Default.Storage) {
                     state.storageInfo.forEachIndexed { i, s ->
                         if (i > 0) SectionDivider()
                         Text(s.partition, style = MaterialTheme.typography.labelMedium,
