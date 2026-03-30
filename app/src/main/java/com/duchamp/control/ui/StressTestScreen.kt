@@ -21,6 +21,7 @@ import com.duchamp.control.StressLogEntry
 @Composable
 fun StressTestScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifier) {
     var duration by remember { mutableIntStateOf(60) }
+    val isRunning = isRunning
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -32,7 +33,7 @@ fun StressTestScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mo
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (state.stressTestRunning)
+                    containerColor = if (isRunning)
                         MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
                     else MaterialTheme.colorScheme.surface
                 ),
@@ -42,14 +43,14 @@ fun StressTestScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mo
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
                             shape = MaterialTheme.shapes.medium,
-                            color = if (state.stressTestRunning)
+                            color = if (isRunning)
                                 MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
                             else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                             modifier = Modifier.size(44.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(Icons.Default.Whatshot, null,
-                                    tint = if (state.stressTestRunning) MaterialTheme.colorScheme.error
+                                    tint = if (isRunning) MaterialTheme.colorScheme.error
                                            else MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(22.dp))
                             }
@@ -59,18 +60,18 @@ fun StressTestScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mo
                             Text("CPU/GPU Stres Testi",
                                 style = MaterialTheme.typography.titleSmall)
                             Text(
-                                if (state.stressTestRunning) "Test çalışıyor — sıcaklık izleniyor"
+                                if (isRunning) "Test çalışıyor — sıcaklık izleniyor"
                                 else "Maksimum yük altında sıcaklık/frekans takibi",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        if (state.stressTestRunning) {
+                        if (isRunning) {
                             StatusBadge("● Aktif", MaterialTheme.colorScheme.error)
                         }
                     }
 
-                    if (!state.stressTestRunning) {
+                    if (!isRunning) {
                         Spacer(Modifier.height(12.dp))
                         Text("Test Süresi",
                             style = MaterialTheme.typography.labelMedium,
@@ -111,7 +112,7 @@ fun StressTestScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mo
         }
 
         // Anlık değerler
-        if (state.stressTestRunning || state.stressTestLog.isNotEmpty()) {
+        if (isRunning || state.stressTestLog.isNotEmpty()) {
             item {
                 val last = state.stressTestLog.lastOrNull()
                 Row(

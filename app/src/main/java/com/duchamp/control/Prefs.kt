@@ -303,6 +303,10 @@ object AppPrefs {
         get() = prefs.getInt("night_charge_end", 7)
         set(v) { prefs.edit().putInt("night_charge_end", v).apply() }
 
+    var nightChargeLimitPct: Int
+        get() = prefs.getInt("night_charge_limit", 80)
+        set(v) { prefs.edit().putInt("night_charge_limit", v).apply() }
+
     var quickTileProfileId: String
         get() = prefs.getString("quick_tile_profile", "balanced") ?: "balanced"
         set(v) { prefs.edit().putString("quick_tile_profile", v).apply() }

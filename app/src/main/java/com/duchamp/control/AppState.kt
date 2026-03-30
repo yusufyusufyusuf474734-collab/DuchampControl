@@ -101,9 +101,6 @@ data class AppState(
     val customProfiles: List<CustomProfile> = emptyList(),
     // Profil istatistikleri
     val profileStats: Map<String, Int> = emptyMap(),
-    // Stres testi
-    val stressTestRunning: Boolean = false,
-    val stressTestTempHistory: List<LiveMetric> = emptyList(),
     // Debloat
     val debloatList: List<DebloatApp> = emptyList(),
     // Kernel parametreleri
