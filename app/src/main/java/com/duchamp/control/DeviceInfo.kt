@@ -533,6 +533,68 @@ object DeviceInfo {
             .filter { it.isNotBlank() }
             .map { it.split(Regex("\\s+")).firstOrNull() ?: "" }
             .filter { it.isNotBlank() }
+
+    // MTK EAS/HMP
+    fun getMtkEasInfo(): MtkEasInfo {
+        fun r(p: String) = RootUtils.readSysfs(p)
+        return MtkEasInfo(
+            schedBoost             = r("/proc/sys/kernel/sched_boost"),
+            inputBoostFreq         = r("/sys/devices/system/cpu/cpu0/cpufreq/input_boost_freq"),
+            inputBoostDuration     = r("/sys/module/cpu_boost/parameters/input_boost_ms"),
+            schedDownMigrateLoad   = r("/proc/sys/kernel/sched_downmigrate"),
+            schedUpMigrateLoad     = r("/proc/sys/kernel/sched_upmigrate"),
+            schedHmpBoost          = r("/proc/sys/kernel/sched_boost"),
+            cpuInputBoostEnabled   = r("/sys/module/cpu_boost/parameters/input_boost_enabled") == "1"
+        )
+    }
+    fun setMtkParam(path: String, value: String): Boolean = RootUtils.writeFile(path, value)
+
+    // Ağ hızı (bytes/s)
+    fun getNetworkSpeed(): Pair<Long, Long> {
+        fun readBytes(file: String) = RootUtils.readSysfs(file).toLongOrNull() ?: 0L
+        val rx = readBytes("/sys/class/net/wlan0/statistics/rx_bytes")
+        val tx = readBytes("/sys/class/net/wlan0/statistics/tx_bytes")
+        return rx to tx
+    }
+
+    // VPN bilgisi
+    fun getVpnInfo(): VpnInfo {
+        val ifaces = RootUtils.runCommand("ip link show | grep -E 'tun|ppp|wg' | awk '{print $2}' | tr -d ':'")
+        val iface = ifaces.lines().firstOrNull { it.isNotBlank() } ?: ""
+        val active = iface.isNotEmpty()
+        val localIp = if (active) RootUtils.runCommand("ip addr show $iface | grep 'inet ' | awk '{print $2}'") else ""
+        val proto = when {
+            iface.startsWith("tun") -> "OpenVPN"
+            iface.startsWith("ppp") -> "PPP"
+            iface.startsWith("wg")  -> "WireGuard"
+            else -> "Bilinmiyor"
+        }
+        return VpnInfo(active, iface, "", localIp, proto)
+    }
+
+    // Firewall (iptables)
+    fun getFirewallRules(): List<FirewallRule> {
+        val raw = RootUtils.runCommand("iptables -L OUTPUT -n --line-numbers 2>/dev/null")
+        return raw.lines().filter { it.contains("DROP") || it.contains("REJECT") }
+            .mapNotNull { line ->
+                val parts = line.trim().split(Regex("\\s+"))
+                if (parts.size >= 5) {
+                    val uid = parts.find { it.startsWith("owner") }?.substringAfter("uid-owner ") ?: return@mapNotNull null
+                    FirewallRule(uid, uid, uid, blockWifi = true, blockData = true)
+                } else null
+            }
+    }
+    fun addFirewallRule(uid: Int, blockWifi: Boolean, blockData: Boolean): Boolean {
+        var ok = true
+        if (blockWifi) ok = ok && RootUtils.runCommand("iptables -A OUTPUT -m owner --uid-owner $uid -o wlan0 -j DROP").isNotEmpty().let { true }
+        if (blockData) ok = ok && RootUtils.runCommand("iptables -A OUTPUT -m owner --uid-owner $uid -o rmnet0 -j DROP").isNotEmpty().let { true }
+        return ok
+    }
+    fun removeFirewallRule(uid: Int): Boolean {
+        RootUtils.runCommand("iptables -D OUTPUT -m owner --uid-owner $uid -o wlan0 -j DROP 2>/dev/null")
+        RootUtils.runCommand("iptables -D OUTPUT -m owner --uid-owner $uid -o rmnet0 -j DROP 2>/dev/null")
+        return true
+    }
 }
 
 // ── Magisk / KernelSU ────────────────────────────────────────────────────────

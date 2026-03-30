@@ -273,16 +273,37 @@ class MainViewModel(private val context: Context) : ViewModel() {
     fun startLiveMonitoring() {
         if (monitorJob?.isActive == true) return
         _state.value = _state.value.copy(liveMonitoringActive = true)
+        var lastRx = 0L; var lastTx = 0L
         monitorJob = viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {
                 val now = System.currentTimeMillis()
+                val (rx, tx) = DeviceInfo.getNetworkSpeed()
+                val rxSpeed = if (lastRx > 0) ((rx - lastRx) / 2f / 1024f) else 0f
+                val txSpeed = if (lastTx > 0) ((tx - lastTx) / 2f / 1024f) else 0f
+                lastRx = rx; lastTx = tx
+                val bat = DeviceInfo.getBatteryInfo()
+                val currentMa = bat.currentNow.replace(" mA", "").toFloatOrNull() ?: 0f
+                val voltageMv = bat.voltage.replace(" mV", "").toFloatOrNull() ?: 0f
                 _state.value = _state.value.copy(
-                    cpuHistory = (_state.value.cpuHistory + LiveMetric(now, LiveMetrics.getCpuUsage())).takeLast(maxHistory),
-                    gpuHistory = (_state.value.gpuHistory + LiveMetric(now, LiveMetrics.getGpuUsage())).takeLast(maxHistory),
-                    ramHistory = (_state.value.ramHistory + LiveMetric(now, LiveMetrics.getRamUsagePct())).takeLast(maxHistory),
-                    batteryHistory = (_state.value.batteryHistory + LiveMetric(now, LiveMetrics.getBatteryPct())).takeLast(maxHistory),
-                    cpuTempHistory = (_state.value.cpuTempHistory + LiveMetric(now, LiveMetrics.getCpuTemp())).takeLast(maxHistory)
+                    cpuHistory      = (_state.value.cpuHistory      + LiveMetric(now, LiveMetrics.getCpuUsage())).takeLast(maxHistory),
+                    gpuHistory      = (_state.value.gpuHistory      + LiveMetric(now, LiveMetrics.getGpuUsage())).takeLast(maxHistory),
+                    ramHistory      = (_state.value.ramHistory      + LiveMetric(now, LiveMetrics.getRamUsagePct())).takeLast(maxHistory),
+                    batteryHistory  = (_state.value.batteryHistory  + LiveMetric(now, LiveMetrics.getBatteryPct())).takeLast(maxHistory),
+                    cpuTempHistory  = (_state.value.cpuTempHistory  + LiveMetric(now, LiveMetrics.getCpuTemp())).takeLast(maxHistory),
+                    netRxHistory    = (_state.value.netRxHistory    + LiveMetric(now, rxSpeed.coerceAtLeast(0f))).takeLast(maxHistory),
+                    netTxHistory    = (_state.value.netTxHistory    + LiveMetric(now, txSpeed.coerceAtLeast(0f))).takeLast(maxHistory),
+                    chargeHistory   = (_state.value.chargeHistory   + LiveMetric(now, currentMa)).takeLast(maxHistory),
+                    voltageHistory  = (_state.value.voltageHistory  + LiveMetric(now, voltageMv)).takeLast(maxHistory)
                 )
+                // Termal throttle kontrolü
+                val temp = _state.value.cpuTempHistory.lastOrNull()?.value ?: 0f
+                if (_state.value.thermalThrottleEnabled && temp >= _state.value.thermalThrottleTempC) {
+                    PerformanceProfiles.presets.find { it.id == _state.value.thermalThrottleProfileId }?.let { p ->
+                        PerformanceProfiles.apply(p)
+                        _state.value = _state.value.copy(activeProfileId = p.id,
+                            statusMessage = "Termal throttle: ${temp.toInt()}°C → ${p.name}")
+                    }
+                }
                 delay(2000)
             }
         }
@@ -427,6 +448,46 @@ class MainViewModel(private val context: Context) : ViewModel() {
     fun refreshBattery() = update { _state.value.copy(batteryInfo = DeviceInfo.getBatteryInfo()) }
     fun refreshThermals() = update { _state.value.copy(thermals = DeviceInfo.getThermals()) }
     fun refreshCpu() = update { _state.value.copy(cpuInfo = DeviceInfo.getCpuInfo(), gpuInfo = DeviceInfo.getGpuInfo()) }
+
+    // MTK EAS/HMP
+    fun loadMtkEas() = update { _state.value.copy(mtkEasInfo = DeviceInfo.getMtkEasInfo()) }
+    fun setMtkParam(path: String, value: String, label: String) = update {
+        DeviceInfo.setMtkParam(path, value)
+        _state.value.copy(mtkEasInfo = DeviceInfo.getMtkEasInfo(), statusMessage = "$label: $value")
+    }
+
+    // Termal throttle
+    fun setThermalThrottle(enabled: Boolean, tempC: Int, profileId: String) {
+        _state.value = _state.value.copy(
+            thermalThrottleEnabled = enabled,
+            thermalThrottleTempC = tempC,
+            thermalThrottleProfileId = profileId,
+            statusMessage = if (enabled) "Termal throttle aktif: ≥${tempC}°C → $profileId" else "Termal throttle kapatıldı"
+        )
+    }
+
+    // VPN
+    fun loadVpnInfo() = update { _state.value.copy(vpnInfo = DeviceInfo.getVpnInfo()) }
+
+    // Firewall
+    fun loadFirewallRules() = update { _state.value.copy(firewallRules = DeviceInfo.getFirewallRules()) }
+    fun addFirewallRule(packageName: String, appLabel: String, uid: Int, blockWifi: Boolean, blockData: Boolean) = update {
+        DeviceInfo.addFirewallRule(uid, blockWifi, blockData)
+        val rule = FirewallRule(uid.toString(), packageName, appLabel, blockWifi, blockData)
+        _state.value.copy(firewallRules = _state.value.firewallRules + rule,
+            statusMessage = "Firewall kuralı eklendi: $appLabel")
+    }
+    fun removeFirewallRule(uid: String) = update {
+        DeviceInfo.removeFirewallRule(uid.toIntOrNull() ?: 0)
+        _state.value.copy(firewallRules = _state.value.firewallRules.filter { it.id != uid },
+            statusMessage = "Firewall kuralı kaldırıldı")
+    }
+
+    // FPS overlay
+    fun setFpsOverlay(enabled: Boolean) {
+        _state.value = _state.value.copy(fpsOverlayEnabled = enabled,
+            statusMessage = if (enabled) "FPS overlay açıldı" else "FPS overlay kapatıldı")
+    }
 
     // Uygulama başına profil
     fun setAppProfile(packageName: String, profileId: String) {

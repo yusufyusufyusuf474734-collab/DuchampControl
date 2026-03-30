@@ -45,6 +45,38 @@ data class ScheduleRule(
     val customActions: List<String> = emptyList() // "cpu:schedutil", "polling:120" vb.
 )
 
+// ── MTK EAS/HMP ──────────────────────────────────────────────────────────────
+
+data class MtkEasInfo(
+    val schedBoost: String,
+    val inputBoostFreq: String,
+    val inputBoostDuration: String,
+    val schedDownMigrateLoad: String,
+    val schedUpMigrateLoad: String,
+    val schedHmpBoost: String,
+    val cpuInputBoostEnabled: Boolean
+)
+
+// ── Firewall ──────────────────────────────────────────────────────────────────
+
+data class FirewallRule(
+    val id: String,
+    val packageName: String,
+    val appLabel: String,
+    val blockWifi: Boolean,
+    val blockData: Boolean
+)
+
+// ── VPN ───────────────────────────────────────────────────────────────────────
+
+data class VpnInfo(
+    val active: Boolean,
+    val interfaceName: String,
+    val serverIp: String,
+    val localIp: String,
+    val protocol: String
+)
+
 // ── Güvenlik ─────────────────────────────────────────────────────────────────
 
 data class RootAccessLog(

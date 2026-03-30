@@ -132,6 +132,73 @@ fun LiveMonitorScreen(state: AppState, vm: MainViewModel, modifier: Modifier = M
                 maxValue = 100f
             )
         }
+
+        // Ağ hız grafikleri
+        if (state.netRxHistory.isNotEmpty() || state.netTxHistory.isNotEmpty()) {
+            item {
+                MetricChart(
+                    title = "İndirme Hızı",
+                    data = state.netRxHistory,
+                    color = MaterialTheme.colorScheme.primary,
+                    unit = " KB/s",
+                    maxValue = (state.netRxHistory.maxOfOrNull { it.value }?.times(1.2f) ?: 1000f).coerceAtLeast(100f)
+                )
+            }
+            item {
+                MetricChart(
+                    title = "Yükleme Hızı",
+                    data = state.netTxHistory,
+                    color = MaterialTheme.colorScheme.secondary,
+                    unit = " KB/s",
+                    maxValue = (state.netTxHistory.maxOfOrNull { it.value }?.times(1.2f) ?: 1000f).coerceAtLeast(100f)
+                )
+            }
+        }
+
+        // FPS Overlay
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(0.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = if (state.fpsOverlayEnabled)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Gamepad, null,
+                                tint = if (state.fpsOverlayEnabled) MaterialTheme.colorScheme.primary
+                                       else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("FPS Overlay",
+                            style = MaterialTheme.typography.titleSmall)
+                        Text("Oyun sırasında ekranda FPS göster",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(
+                        checked = state.fpsOverlayEnabled,
+                        onCheckedChange = { vm.setFpsOverlay(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        )
+                    )
+                }
+            }
+        }
     }
 }
 

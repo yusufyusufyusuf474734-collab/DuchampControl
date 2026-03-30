@@ -6,40 +6,148 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.duchamp.control.AppState
 import com.duchamp.control.MainViewModel
+import kotlin.math.abs
 
 @Composable
 fun BatteryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifier) {
     val bat = state.batteryInfo ?: return
 
+    // Pil tüketim tahmini
+    val currentMa = bat.currentNow.replace(" mA", "").toFloatOrNull()?.let { abs(it) } ?: 0f
+    val capacityMah = 5110f // Poco X6 Pro batarya kapasitesi
+    val remainingMah = capacityMah * bat.capacity / 100f
+    val hoursLeft = if (currentMa > 0) remainingMah / currentMa else 0f
+    val isCharging = bat.status.contains("Charging", ignoreCase = true)
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Genel durum
+        // Pil durumu + tahmin
         item {
-            SectionCard("Batarya Durumu", Icons.Default.BatteryFull) {
-                UsageBar("Şarj Seviyesi", bat.capacity.toFloat() / 100f)
-                Spacer(Modifier.height(12.dp))
-                InfoRow("Kapasite", "${bat.capacity}%")
-                InfoRow("Durum", bat.status)
-                InfoRow("Sağlık", bat.health)
-                InfoRow("Teknoloji", bat.technology)
-                InfoRow("Şarj Döngüsü", bat.cycleCount)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(0.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    UsageBar(
+                        "Şarj Seviyesi",
+                        bat.capacity / 100f,
+                        color = when {
+                            bat.capacity > 50 -> MaterialTheme.colorScheme.tertiary
+                            bat.capacity > 20 -> Color(0xFFF59E0B)
+                            else              -> MaterialTheme.colorScheme.error
+                        },
+                        height = 8.dp
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        MetricCard(
+                            label = if (isCharging) "Şarj Süresi" else "Kalan Süre",
+                            value = if (hoursLeft > 0) {
+                                val h = hoursLeft.toInt()
+                                val m = ((hoursLeft - h) * 60).toInt()
+                                "${h}s ${m}dk"
+                            } else "—",
+                            icon = if (isCharging) Icons.Default.BatteryChargingFull else Icons.Default.BatteryFull,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricCard(
+                            label = "Akım",
+                            value = bat.currentNow,
+                            icon = Icons.Default.ElectricBolt,
+                            color = if (isCharging) MaterialTheme.colorScheme.tertiary else Color(0xFFF59E0B),
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricCard(
+                            label = "Sıcaklık",
+                            value = bat.tempC,
+                            icon = Icons.Default.Thermostat,
+                            color = if ((bat.tempC.replace("°C","").toFloatOrNull() ?: 0f) > 40f)
+                                MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Şarj akımı grafiği
+        if (state.chargeHistory.isNotEmpty()) {
+            item {
+                SectionCard("Şarj Akımı Geçmişi", Icons.Default.ShowChart) {
+                    MetricChart(
+                        title = "Akım (mA)",
+                        data = state.chargeHistory,
+                        color = if (isCharging) MaterialTheme.colorScheme.tertiary else Color(0xFFF59E0B),
+                        unit = "mA",
+                        maxValue = 6000f
+                    )
+                }
+            }
+        }
+
+        // Voltaj grafiği
+        if (state.voltageHistory.isNotEmpty()) {
+            item {
+                SectionCard("Voltaj Geçmişi", Icons.Default.Power) {
+                    MetricChart(
+                        title = "Voltaj (mV)",
+                        data = state.voltageHistory,
+                        color = MaterialTheme.colorScheme.secondary,
+                        unit = "mV",
+                        maxValue = 5000f
+                    )
+                }
             }
         }
 
         // Elektriksel değerler
         item {
             SectionCard("Elektriksel Değerler", Icons.Default.Power) {
+                InfoRow("Durum", bat.status)
+                InfoRow("Sağlık", bat.health)
+                InfoRow("Teknoloji", bat.technology)
+                InfoRow("Şarj Döngüsü", bat.cycleCount)
+                SectionDivider()
                 InfoRow("Sıcaklık", bat.tempC)
                 InfoRow("Voltaj", bat.voltage)
                 InfoRow("Akım", bat.currentNow)
                 InfoRow("Giriş Akımı Limiti", bat.inputCurrentLimit)
+            }
+        }
+
+        // Pil tüketim tahmini detayı
+        item {
+            SectionCard("Pil Tüketim Analizi", Icons.Default.Analytics) {
+                InfoRow("Batarya Kapasitesi", "${capacityMah.toInt()} mAh")
+                InfoRow("Kalan Kapasite", "${remainingMah.toInt()} mAh")
+                InfoRow("Anlık Tüketim", "${currentMa.toInt()} mA")
+                if (hoursLeft > 0 && !isCharging) {
+                    SectionDivider()
+                    val scenarios = listOf(
+                        "Bekleme" to (remainingMah / 150f),
+                        "Normal Kullanım" to (remainingMah / currentMa),
+                        "Yoğun Kullanım" to (remainingMah / (currentMa * 1.8f))
+                    )
+                    scenarios.forEach { (label, hours) ->
+                        val h = hours.toInt()
+                        val m = ((hours - h) * 60).toInt()
+                        InfoRow(label, "${h}s ${m}dk")
+                    }
+                }
             }
         }
 
@@ -51,21 +159,18 @@ fun BatteryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
                 ) }
                 Text("Batarya ömrünü uzatmak için şarj limitini düşürebilirsiniz.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                Spacer(Modifier.height(8.dp))
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(10.dp))
                 SliderRow(
                     label = "Şarj Limiti",
                     value = limitVal,
                     valueRange = 60f..100f,
                     steps = 7,
                     displayValue = "${limitVal.toInt()}%",
-                    onValueChangeFinished = {
-                        limitVal = it
-                        vm.setChargeLimit(it.toInt())
-                    }
+                    onValueChangeFinished = { limitVal = it; vm.setChargeLimit(it.toInt()) }
                 )
-                Spacer(Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(80, 85, 90, 95, 100).forEach { pct ->
                         FilterChip(
                             selected = limitVal.toInt() == pct,
@@ -77,7 +182,7 @@ fun BatteryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
             }
         }
 
-        // Hızlı şarj
+        // Şarj ayarları
         item {
             SectionCard("Şarj Ayarları", Icons.Default.FlashOn) {
                 ControlRow(
@@ -86,18 +191,6 @@ fun BatteryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
                     checked = bat.fastChargeEnabled,
                     onCheckedChange = { vm.setFastCharge(it) }
                 )
-            }
-        }
-
-        // Yenile butonu
-        item {
-            OutlinedButton(
-                onClick = { vm.refreshBattery() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Batarya Bilgisini Yenile")
             }
         }
     }

@@ -50,5 +50,23 @@ data class AppState(
     // Uyku modu
     val sleepModeEnabled: Boolean = false,
     val sleepProfileId: String = "powersave",
-    val wakeProfileId: String = "balanced"
+    val wakeProfileId: String = "balanced",
+    // Termal throttle
+    val thermalThrottleEnabled: Boolean = false,
+    val thermalThrottleTempC: Int = 75,
+    val thermalThrottleProfileId: String = "powersave",
+    // MTK EAS/HMP
+    val mtkEasInfo: MtkEasInfo? = null,
+    // Şarj geçmişi
+    val chargeHistory: List<LiveMetric> = emptyList(),
+    val voltageHistory: List<LiveMetric> = emptyList(),
+    // Ağ hız geçmişi
+    val netRxHistory: List<LiveMetric> = emptyList(),
+    val netTxHistory: List<LiveMetric> = emptyList(),
+    // Firewall
+    val firewallRules: List<FirewallRule> = emptyList(),
+    // VPN
+    val vpnInfo: VpnInfo? = null,
+    // FPS overlay
+    val fpsOverlayEnabled: Boolean = false
 )
