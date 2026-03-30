@@ -34,6 +34,10 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Dmesg         : Screen("dmesg",       "Dmesg",           Icons.Default.Terminal)
     object RebootMenu    : Screen("reboot",      "Yeniden Başlat",  Icons.Default.RestartAlt)
     object CameraOpt     : Screen("camera",      "Kamera",          Icons.Default.CameraAlt)
+    object TaskManager   : Screen("tasks",        "Görev Yöneticisi",Icons.Default.List)
+    object SpeedTest     : Screen("speedtest",    "Hız Testi",       Icons.Default.NetworkCheck)
+    object WifiAnalyzer  : Screen("wifi",         "Wi-Fi Analizi",   Icons.Default.Wifi)
+    object StressTest    : Screen("stress",       "Stres Testi",     Icons.Default.Whatshot)
     object Appearance    : Screen("appearance",  "Görünüm",         Icons.Default.Palette)
     object System        : Screen("system",      "Sistem",          Icons.Default.Settings)
     object Hardware      : Screen("hardware",    "Donanım",         Icons.Default.Hardware)
@@ -57,7 +61,8 @@ val drawerGroups = listOf(
         Screen.LiveMonitor,
         Screen.Profiles,
         Screen.Scheduler,
-        Screen.Benchmark
+        Screen.Benchmark,
+        Screen.StressTest
     )),
     DrawerGroup("Donanım", listOf(
         Screen.Cpu,
@@ -80,7 +85,12 @@ val drawerGroups = listOf(
         Screen.Magisk,
         Screen.System,
         Screen.Hardware,
-        Screen.Logcat
+        Screen.Logcat,
+        Screen.TaskManager
+    )),
+    DrawerGroup("Ağ & Araçlar", listOf(
+        Screen.SpeedTest,
+        Screen.WifiAnalyzer
     )),
     DrawerGroup("Araçlar", listOf(
         Screen.GameMode,

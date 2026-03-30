@@ -286,6 +286,10 @@ fun DuchampApp(vm: MainViewModel) {
                 Screen.Dmesg        -> DmesgScreen(state, vm, m)
                 Screen.RebootMenu   -> RebootMenuScreen(state, vm, m)
                 Screen.CameraOpt    -> CameraOptScreen(state, vm, m)
+                Screen.TaskManager  -> TaskManagerScreen(state, vm, m)
+                Screen.SpeedTest    -> SpeedTestScreen(state, vm, m)
+                Screen.WifiAnalyzer -> WifiAnalyzerScreen(state, vm, m)
+                Screen.StressTest   -> StressTestScreen(state, vm, m)
                 Screen.About        -> AboutScreen(m)
                 else                -> DashboardScreen(state, vm, m)
             }

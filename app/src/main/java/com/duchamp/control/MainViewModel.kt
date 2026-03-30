@@ -752,7 +752,203 @@ class MainViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    // Özel profiller
+    // Görev yöneticisi
+    fun loadProcessList() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.value = _state.value.copy(processLoading = true)
+            val raw = RootUtils.runCommand("ps -A -o PID,USER,RSS,PCPU,NAME 2>/dev/null | tail -n +2")
+            val list = raw.lines().mapNotNull { line ->
+                val parts = line.trim().split(Regex("\\s+"))
+                if (parts.size >= 5) {
+                    try {
+                        ProcessInfo(
+                            pid = parts[0].toInt(),
+                            user = parts[1],
+                            ramMb = (parts[2].toLongOrNull() ?: 0L) / 1024f,
+                            cpuPct = parts[3].toFloatOrNull() ?: 0f,
+                            name = parts.drop(4).joinToString(" ")
+                        )
+                    } catch (e: Exception) { null }
+                } else null
+            }.sortedByDescending { it.ramMb }
+            _state.value = _state.value.copy(processList = list, processLoading = false)
+        }
+    }
+    fun killProcess(pid: Int, name: String) = update {
+        RootUtils.runCommand("kill -9 $pid")
+        val list = _state.value.processList.filter { it.pid != pid }
+        _state.value.copy(processList = list, statusMessage = "Sonlandırıldı: $name")
+    }
+    fun clearRamCache() = update {
+        RootUtils.runCommand("am send-trim-memory all COMPLETE")
+        _state.value.copy(memInfo = DeviceInfo.getMemInfo(), statusMessage = "RAM cache temizlendi")
+    }
+    fun dropCaches() = update {
+        RootUtils.writeFile("/proc/sys/vm/drop_caches", "3")
+        _state.value.copy(memInfo = DeviceInfo.getMemInfo(), statusMessage = "Drop caches uygulandı")
+    }
+    fun setZramSize(size: String) = update {
+        val bytes = when (size) {
+            "1G" -> "1073741824"
+            "2G" -> "2147483648"
+            "3G" -> "3221225472"
+            "4G" -> "4294967296"
+            else -> "2147483648"
+        }
+        RootUtils.runCommand("swapoff /dev/block/zram0 2>/dev/null")
+        RootUtils.writeFile("/sys/block/zram0/reset", "1")
+        RootUtils.writeFile("/sys/block/zram0/disksize", bytes)
+        RootUtils.runCommand("mkswap /dev/block/zram0 && swapon /dev/block/zram0")
+        _state.value.copy(memInfo = DeviceInfo.getMemInfo(), statusMessage = "ZRAM boyutu: $size")
+    }
+
+    // Hız testi
+    fun runSpeedTest() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.value = _state.value.copy(speedTestRunning = true)
+            try {
+                // Ping
+                val pingOut = RootUtils.runCommand("ping -c 3 -W 2 8.8.8.8 2>/dev/null | tail -1")
+                val pingMs = if (pingOut.contains("avg")) {
+                    pingOut.substringAfter("/").substringBefore("/").trim().toFloatOrNull()?.toInt() ?: 0
+                } else 0
+
+                // İndirme hızı (10MB dosya)
+                val dlStart = System.currentTimeMillis()
+                val dlBytes = RootUtils.runCommand(
+                    "curl -s -o /dev/null -w '%{size_download}' --max-time 10 https://speed.cloudflare.com/__down?bytes=10000000 2>/dev/null"
+                ).toLongOrNull() ?: 0L
+                val dlTime = (System.currentTimeMillis() - dlStart) / 1000f
+                val dlMbps = if (dlTime > 0) (dlBytes * 8f / 1_000_000f / dlTime) else 0f
+
+                // Yükleme hızı (1MB)
+                val ulStart = System.currentTimeMillis()
+                RootUtils.runCommand(
+                    "curl -s -o /dev/null -w '%{size_upload}' --max-time 10 -X POST -d @/dev/urandom --max-filesize 1000000 https://speed.cloudflare.com/__up 2>/dev/null"
+                )
+                val ulTime = (System.currentTimeMillis() - ulStart) / 1000f
+                val ulMbps = if (ulTime > 0) (1_000_000f * 8f / 1_000_000f / ulTime) else 0f
+
+                _state.value = _state.value.copy(
+                    speedTestResult = SpeedTestResult(dlMbps, ulMbps, pingMs, "Cloudflare"),
+                    speedTestRunning = false,
+                    statusMessage = "Hız testi tamamlandı: ${dlMbps.toInt()} Mbps ↓"
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(speedTestRunning = false,
+                    statusMessage = "Hız testi başarısız: ${e.message}")
+            }
+        }
+    }
+
+    // Wi-Fi analizi
+    fun scanWifiNetworks() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.value = _state.value.copy(wifiScanRunning = true)
+            val raw = RootUtils.runCommand("iw dev wlan0 scan 2>/dev/null")
+            val networks = mutableListOf<WifiNetwork>()
+            var bssid = ""; var ssid = ""; var level = -100
+            var freq = 2412; var security = "Open"
+            raw.lines().forEach { line ->
+                val t = line.trim()
+                when {
+                    t.startsWith("BSS ") -> {
+                        if (bssid.isNotEmpty()) {
+                            val ch = if (freq > 4000) ((freq - 5000) / 5) else ((freq - 2407) / 5)
+                            networks.add(WifiNetwork(ssid, bssid, level, freq, ch, security))
+                        }
+                        bssid = t.substringAfter("BSS ").substringBefore("(").trim()
+                        ssid = ""; level = -100; freq = 2412; security = "Open"
+                    }
+                    t.startsWith("SSID:") -> ssid = t.substringAfter("SSID:").trim()
+                    t.startsWith("freq:") -> freq = t.substringAfter("freq:").trim().toIntOrNull() ?: 2412
+                    t.startsWith("signal:") -> level = t.substringAfter("signal:").trim().substringBefore(" ").toFloatOrNull()?.toInt() ?: -100
+                    t.contains("WPA") || t.contains("RSN") -> security = "WPA2"
+                    t.contains("WEP") -> security = "WEP"
+                }
+            }
+            if (bssid.isNotEmpty()) {
+                val ch = if (freq > 4000) ((freq - 5000) / 5) else ((freq - 2407) / 5)
+                networks.add(WifiNetwork(ssid, bssid, level, freq, ch, security))
+            }
+            _state.value = _state.value.copy(wifiNetworks = networks, wifiScanRunning = false,
+                statusMessage = "${networks.size} Wi-Fi ağı bulundu")
+        }
+    }
+
+    // Pil sağlığı skoru
+    fun calculateBatteryHealth() = update {
+        val bat = DeviceInfo.getBatteryInfo()
+        val cycles = bat.cycleCount.toIntOrNull() ?: 0
+        val tempC = bat.tempC.replace("°C", "").toFloatOrNull() ?: 25f
+        val capacity = bat.capacity
+
+        var score = 100
+        val details = mutableListOf<String>()
+
+        if (cycles > 500) { score -= 20; details.add("Yüksek şarj döngüsü: $cycles") }
+        else if (cycles > 300) { score -= 10; details.add("Orta şarj döngüsü: $cycles") }
+        else details.add("Şarj döngüsü normal: $cycles")
+
+        if (tempC > 40f) { score -= 15; details.add("Yüksek sıcaklık: ${tempC}°C") }
+        else if (tempC > 35f) { score -= 5; details.add("Sıcaklık biraz yüksek: ${tempC}°C") }
+        else details.add("Sıcaklık normal: ${tempC}°C")
+
+        if (capacity < 80) { score -= 20; details.add("Düşük kapasite: %$capacity") }
+        else if (capacity < 90) { score -= 5; details.add("Kapasite iyi: %$capacity") }
+        else details.add("Kapasite mükemmel: %$capacity")
+
+        val grade = when {
+            score >= 80 -> "İyi"
+            score >= 60 -> "Orta"
+            else        -> "Kötü"
+        }
+
+        _state.value.copy(
+            batteryHealthScore = BatteryHealthScore(
+                score = score.coerceIn(0, 100),
+                grade = grade,
+                cycleCount = cycles,
+                avgTempC = tempC,
+                capacityPct = capacity,
+                details = details
+            )
+        )
+    }
+
+    // Stres testi
+    fun startStressTest(durationSec: Int) {
+        if (_state.value.stressTestRunning) return
+        _state.value = _state.value.copy(stressTestRunning = true, stressTestLog = emptyList())
+        viewModelScope.launch(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            val endTime = startTime + durationSec * 1000L
+            // CPU yükü başlat
+            val stressJob = launch(Dispatchers.Default) {
+                while (isActive && System.currentTimeMillis() < endTime) {
+                    var x = 1.0
+                    repeat(100_000) { x = kotlin.math.sqrt(x + it) }
+                }
+            }
+            while (System.currentTimeMillis() < endTime && _state.value.stressTestRunning) {
+                val tempRaw = RootUtils.readSysfs("/sys/class/thermal/thermal_zone0/temp").toIntOrNull() ?: 0
+                val tempC = if (tempRaw > 1000) tempRaw / 1000f else tempRaw.toFloat()
+                val cpuFreq = DeviceInfo.getCpuInfo().clusterPrime.curFreqMhz
+                val gpuFreq = DeviceInfo.getGpuInfo().curFreqMhz
+                val entry = StressLogEntry(System.currentTimeMillis(), tempC, cpuFreq, gpuFreq)
+                _state.value = _state.value.copy(
+                    stressTestLog = _state.value.stressTestLog + entry
+                )
+                delay(2000)
+            }
+            stressJob.cancel()
+            _state.value = _state.value.copy(stressTestRunning = false,
+                statusMessage = "Stres testi tamamlandı")
+        }
+    }
+    fun stopStressTest() {
+        _state.value = _state.value.copy(stressTestRunning = false)
+    }
     fun addCustomProfile(profile: CustomProfile) {
         val list = _state.value.customProfiles + profile
         _state.value = _state.value.copy(customProfiles = list, statusMessage = "Profil oluşturuldu: ${profile.name}")

@@ -113,5 +113,19 @@ data class AppState(
     // Reboot menüsü
     val rebootMenuVisible: Boolean = false,
     // Quick Tile
-    val quickTileProfileId: String = "balanced"
+    val quickTileProfileId: String = "balanced",
+    // Görev yöneticisi
+    val processList: List<ProcessInfo> = emptyList(),
+    val processLoading: Boolean = false,
+    // Hız testi
+    val speedTestResult: SpeedTestResult? = null,
+    val speedTestRunning: Boolean = false,
+    // Wi-Fi analizi
+    val wifiNetworks: List<WifiNetwork> = emptyList(),
+    val wifiScanRunning: Boolean = false,
+    // Pil sağlığı skoru
+    val batteryHealthScore: BatteryHealthScore? = null,
+    // Stres testi
+    val stressTestRunning: Boolean = false,
+    val stressTestLog: List<StressLogEntry> = emptyList()
 )

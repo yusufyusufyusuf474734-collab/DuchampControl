@@ -45,6 +45,57 @@ data class ScheduleRule(
     val customActions: List<String> = emptyList() // "cpu:schedutil", "polling:120" vb.
 )
 
+// ── Görev Yöneticisi ─────────────────────────────────────────────────────────
+
+data class ProcessInfo(
+    val pid: Int,
+    val name: String,
+    val ramMb: Float,
+    val cpuPct: Float,
+    val user: String
+)
+
+// ── Hız Testi ────────────────────────────────────────────────────────────────
+
+data class SpeedTestResult(
+    val downloadMbps: Float,
+    val uploadMbps: Float,
+    val pingMs: Int,
+    val server: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+// ── Wi-Fi Analizi ─────────────────────────────────────────────────────────────
+
+data class WifiNetwork(
+    val ssid: String,
+    val bssid: String,
+    val level: Int,
+    val frequency: Int,
+    val channel: Int,
+    val security: String
+)
+
+// ── Pil Sağlığı ──────────────────────────────────────────────────────────────
+
+data class BatteryHealthScore(
+    val score: Int,          // 0-100
+    val grade: String,       // İyi / Orta / Kötü
+    val cycleCount: Int,
+    val avgTempC: Float,
+    val capacityPct: Int,
+    val details: List<String>
+)
+
+// ── Stres Testi ──────────────────────────────────────────────────────────────
+
+data class StressLogEntry(
+    val timeMs: Long,
+    val tempC: Float,
+    val cpuFreqMhz: String,
+    val gpuFreqMhz: String
+)
+
 // ── Özel Profil ──────────────────────────────────────────────────────────────
 
 data class CustomProfile(

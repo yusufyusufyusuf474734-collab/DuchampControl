@@ -114,6 +114,71 @@ fun BatteryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
             }
         }
 
+        // Pil sağlığı skoru
+        item {
+            SectionCard("Pil Sağlığı Skoru", Icons.Default.HealthAndSafety) {
+                val score = state.batteryHealthScore
+                if (score == null) {
+                    Button(onClick = { vm.calculateBatteryHealth() }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Analytics, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Sağlık Skorunu Hesapla")
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(72.dp)) {
+                            CircularProgressIndicator(
+                                progress = { score.score / 100f },
+                                modifier = Modifier.size(72.dp),
+                                strokeWidth = 6.dp,
+                                color = when (score.grade) {
+                                    "İyi"  -> MaterialTheme.colorScheme.tertiary
+                                    "Orta" -> Color(0xFFF59E0B)
+                                    else   -> MaterialTheme.colorScheme.error
+                                },
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("${score.score}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface)
+                                Text(score.grade,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            InfoRow("Şarj Döngüsü", "${score.cycleCount}")
+                            InfoRow("Ort. Sıcaklık", "${score.avgTempC}°C")
+                            InfoRow("Kapasite", "${score.capacityPct}%")
+                        }
+                    }
+                    if (score.details.isNotEmpty()) {
+                        SectionDivider()
+                        score.details.forEach { detail ->
+                            Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                                Text("·", color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(end = 6.dp))
+                                Text(detail, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick = { vm.calculateBatteryHealth() },
+                        modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Yeniden Hesapla")
+                    }
+                }
+            }
+        }
+
         // Elektriksel değerler
         item {
             SectionCard("Elektriksel Değerler", Icons.Default.Power) {

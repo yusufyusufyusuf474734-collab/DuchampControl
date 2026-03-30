@@ -21,24 +21,80 @@ fun MemoryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifi
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // RAM
+        // RAM temizleme
         item {
-            SectionCard("RAM - LPDDR5X", Icons.Default.Memory) {
+            SectionCard("RAM Yönetimi", Icons.Default.CleaningServices) {
                 val usedPct = if (mem.totalMb > 0) mem.usedMb.toFloat() / mem.totalMb.toFloat() else 0f
-                UsageBar("Kullanım", usedPct)
-                Spacer(Modifier.height(8.dp))
+                UsageBar("Kullanım", usedPct,
+                    color = when {
+                        usedPct > 0.85f -> MaterialTheme.colorScheme.error
+                        usedPct > 0.7f  -> Color(0xFFF59E0B)
+                        else            -> MaterialTheme.colorScheme.primary
+                    })
+                Spacer(Modifier.height(10.dp))
                 InfoRow("Toplam", "${mem.totalMb} MB")
                 InfoRow("Kullanılan", "${mem.usedMb} MB")
                 InfoRow("Boş", "${mem.availMb} MB")
+                SectionDivider()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { vm.clearRamCache() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.CleaningServices, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Cache Temizle")
+                    }
+                    OutlinedButton(
+                        onClick = { vm.dropCaches() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Drop Caches")
+                    }
+                }
+            }
+        }
+
+        // Swap yönetimi
+        item {
+            SectionCard("Swap & ZRAM Yönetimi", Icons.Default.SwapVert) {
+                InfoRow("ZRAM Boyutu", mem.zramSizeGb)
+                InfoRow("ZRAM Kullanılan", mem.zramUsedMb)
+                InfoRow("Algoritma", mem.zramAlgo)
+                SectionDivider()
+                Text("ZRAM Boyutu Ayarla",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("1G" to "1 GB", "2G" to "2 GB", "3G" to "3 GB", "4G" to "4 GB").forEach { (size, label) ->
+                        FilterChip(
+                            selected = mem.zramSizeGb.contains(size.replace("G", "")),
+                            onClick = { vm.setZramSize(size) },
+                            label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+                SectionDivider()
+                ChipGroup(
+                    label = "Sıkıştırma Algoritması",
+                    items = listOf("lz4", "lzo", "zstd", "lzo-rle"),
+                    selected = mem.zramAlgo.trim('[', ']'),
+                    onSelect = { vm.setZramAlgo(it) }
+                )
+                Spacer(Modifier.height(4.dp))
+                Text("Not: Boyut/algoritma değişikliği swap'ı sıfırlar.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f))
             }
         }
 
         // Swappiness
         item {
             SectionCard("Swappiness", Icons.Default.SwapVert) {
-                var swapVal by remember {
-                    mutableFloatStateOf(mem.swappiness.toFloatOrNull() ?: 60f)
-                }
+                var swapVal by remember { mutableFloatStateOf(mem.swappiness.toFloatOrNull() ?: 60f) }
                 Text("Düşük değer RAM'i tercih eder, yüksek değer swap'ı daha çok kullanır.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
@@ -64,26 +120,6 @@ fun MemoryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifi
                         )
                     }
                 }
-            }
-        }
-
-        // ZRAM
-        item {
-            SectionCard("ZRAM", Icons.Default.LayersClear) {
-                InfoRow("Boyut", mem.zramSizeGb)
-                InfoRow("Kullanılan", mem.zramUsedMb)
-                InfoRow("Algoritma", mem.zramAlgo)
-                SectionDivider()
-                ChipGroup(
-                    label = "Sıkıştırma Algoritması",
-                    items = listOf("lz4", "lzo", "zstd", "lzo-rle"),
-                    selected = mem.zramAlgo.trim('[', ']'),
-                    onSelect = { vm.setZramAlgo(it) }
-                )
-                Spacer(Modifier.height(4.dp))
-                Text("Not: Algoritma değişikliği swap'ı sıfırlar.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f))
             }
         }
 
