@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import com.duchamp.control.AppState
 import com.duchamp.control.MainViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.sqrt
@@ -117,21 +119,19 @@ fun BenchmarkScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mod
                                     currentTest = "CPU Çok Çekirdek Testi..."
                                     val cpuMulti = withContext(Dispatchers.Default) {
                                         val cores = Runtime.getRuntime().availableProcessors()
-                                        var total = 0L
                                         val jobs = (0 until cores).map {
-                                            kotlinx.coroutines.async(Dispatchers.Default) {
+                                            async(Dispatchers.Default) {
                                                 var ops = 0L
                                                 val end = System.currentTimeMillis() + 1000
                                                 while (System.currentTimeMillis() < end) {
                                                     var x = 1.0
-                                                    repeat(1000) { i -> x = sqrt(x + i) }
+                                                    repeat(1000) { i -> x = sqrt(x + i.toDouble()) }
                                                     ops++
                                                 }
                                                 ops
                                             }
                                         }
-                                        jobs.forEach { total += it.await() }
-                                        total
+                                        jobs.awaitAll().sum()
                                     }
                                     r.add(BenchmarkResult("CPU Çok Çekirdek", cpuMulti, "ops/s", Color(0xFF8B5CF6)))
                                     progress = 0.55f

@@ -130,15 +130,12 @@ fun SecurityScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
             }
         }
 
-        // Hosts dosyası editörü
+        // Hosts editörü — NetworkScreen'den import edilir
         item {
             HostsEditorCard(vm)
         }
     }
 }
-
-@Composable
-fun SecurityStatusRow(label: String, value: String, color: Color, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -176,106 +173,5 @@ fun RootLogRow(log: RootAccessLog) {
             style = MaterialTheme.typography.labelSmall,
             color = if (log.granted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
-    }
-}
-
-@Composable
-fun HostsEditorCard(vm: MainViewModel) {
-    var domain by remember { mutableStateOf("") }
-    var ip by remember { mutableStateOf("0.0.0.0") }
-    var hostsContent by remember { mutableStateOf("") }
-    var showHosts by remember { mutableStateOf(false) }
-
-    SectionCard("Hosts Dosyası Editörü", Icons.Default.Block) {
-        Text(
-            "Hosts dosyasına kural ekleyerek reklam ve izleme sunucularını engelleyin.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-        Spacer(Modifier.height(10.dp))
-
-        // Hızlı engelleme presetleri
-        Text("Hızlı Engelleme", style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-        Spacer(Modifier.height(6.dp))
-        val adDomains = listOf(
-            "ads.google.com",
-            "doubleclick.net",
-            "googleadservices.com",
-            "facebook.com/ads",
-            "analytics.google.com"
-        )
-        adDomains.forEach { d ->
-            OutlinedButton(
-                onClick = { vm.addHostsEntry(d, "0.0.0.0") },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-            ) {
-                Icon(Icons.Default.Block, null, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(d, style = MaterialTheme.typography.bodySmall)
-            }
-        }
-
-        SectionDivider()
-
-        // Manuel ekleme
-        Text("Manuel Kural Ekle", style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-        Spacer(Modifier.height(6.dp))
-        OutlinedTextField(
-            value = domain, onValueChange = { domain = it },
-            label = { Text("Domain (örn: ads.example.com)") },
-            modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
-        Spacer(Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = ip, onValueChange = { ip = it },
-                label = { Text("IP") },
-                modifier = Modifier.weight(1f), singleLine = true
-            )
-            Button(
-                onClick = {
-                    if (domain.isNotBlank()) {
-                        vm.addHostsEntry(domain.trim(), ip.trim())
-                        domain = ""
-                    }
-                },
-                enabled = domain.isNotBlank()
-            ) { Text("Ekle") }
-        }
-
-        SectionDivider()
-
-        // Hosts içeriğini göster
-        TextButton(
-            onClick = {
-                if (!showHosts) hostsContent = SecurityManager.getHostsFile()
-                showHosts = !showHosts
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                if (showHosts) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                null, modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(if (showHosts) "Hosts Dosyasını Gizle" else "Hosts Dosyasını Göster")
-        }
-
-        if (showHosts && hostsContent.isNotEmpty()) {
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Text(
-                    hostsContent,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                    ),
-                    modifier = Modifier.padding(10.dp).fillMaxWidth()
-                )
-            }
-        }
     }
 }
