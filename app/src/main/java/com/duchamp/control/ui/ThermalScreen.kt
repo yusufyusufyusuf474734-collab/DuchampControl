@@ -18,6 +18,8 @@ import com.duchamp.control.ThermalInfo
 
 @Composable
 fun ThermalScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var alertTempC by remember { mutableFloatStateOf(state.thermalAlertTempC.toFloat()) }
     var throttleTempC by remember { mutableFloatStateOf(state.thermalThrottleTempC.toFloat()) }
 
     LaunchedEffect(Unit) { vm.loadMtkEas() }
@@ -27,9 +29,48 @@ fun ThermalScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        // Sıcaklık bildirimi
+        item {
+            SectionCard("CPU Sıcaklık Bildirimi", Icons.Default.NotificationsActive) {
+                ControlRow(
+                    label = "Sıcaklık Uyarısı",
+                    description = "Eşik aşılınca sistem bildirimi gönder",
+                    checked = state.thermalAlertEnabled,
+                    onCheckedChange = { vm.setThermalAlert(context, it, alertTempC.toInt()) }
+                )
+                Spacer(Modifier.height(10.dp))
+                SliderRow(
+                    label = "Uyarı Eşiği",
+                    value = alertTempC,
+                    valueRange = 50f..95f,
+                    steps = 8,
+                    displayValue = "${alertTempC.toInt()}°C",
+                    onValueChangeFinished = {
+                        alertTempC = it
+                        vm.setThermalAlert(context, state.thermalAlertEnabled, it.toInt())
+                    }
+                )
+                if (state.thermalAlertEnabled) {
+                    Spacer(Modifier.height(8.dp))
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                    ) {
+                        Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CheckCircle, null,
+                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("≥${alertTempC.toInt()}°C olunca bildirim gönderilir",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+        }
+
         // Termal throttle
         item {
-            SectionCard("Otomatik Termal Throttle", Icons.Default.Thermostat) {
                 Text(
                     "CPU sıcaklığı belirlenen eşiği aştığında seçili profil otomatik uygulanır.",
                     style = MaterialTheme.typography.bodySmall,

@@ -68,5 +68,14 @@ data class AppState(
     // VPN
     val vpnInfo: VpnInfo? = null,
     // FPS overlay
-    val fpsOverlayEnabled: Boolean = false
+    val fpsOverlayEnabled: Boolean = false,
+    // Oyun modu
+    val gameModeEnabled: Boolean = false,
+    val gameApps: Set<String> = emptySet(),
+    // Termal bildirim
+    val thermalAlertEnabled: Boolean = false,
+    val thermalAlertTempC: Int = 75,
+    // Önyükleme scripti
+    val bootScriptExists: Boolean = false,
+    val bootScriptContent: String = ""
 )

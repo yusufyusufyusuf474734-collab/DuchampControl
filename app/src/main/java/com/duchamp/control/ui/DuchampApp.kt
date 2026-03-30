@@ -275,6 +275,8 @@ fun DuchampApp(vm: MainViewModel) {
                 Screen.AppProfile   -> AppProfileScreen(state, vm, m)
                 Screen.BackupRestore-> BackupRestoreScreen(state, vm, m)
                 Screen.SleepMode    -> SleepModeScreen(state, vm, m)
+                Screen.GameMode     -> GameModeScreen(state, vm, m)
+                Screen.BootScript   -> BootScriptScreen(state, vm, m)
                 Screen.About        -> AboutScreen(m)
                 else                -> DashboardScreen(state, vm, m)
             }

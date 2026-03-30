@@ -31,6 +31,10 @@ class MainViewModel(private val context: Context) : ViewModel() {
             sleepModeEnabled = AppPrefs.sleepModeEnabled,
             sleepProfileId = AppPrefs.sleepProfileId,
             wakeProfileId = AppPrefs.wakeProfileId,
+            gameModeEnabled = AppPrefs.gameModeEnabled,
+            gameApps = AppPrefs.loadGameApps(),
+            thermalAlertEnabled = AppPrefs.thermalAlertEnabled,
+            thermalAlertTempC = AppPrefs.thermalAlertTempC,
             kernelKitInstalled = KernelKitInstaller.isInstalled(),
             kernelKitEnabled = KernelKitInstaller.isEnabled()
         )
@@ -489,6 +493,59 @@ class MainViewModel(private val context: Context) : ViewModel() {
             statusMessage = if (enabled) "FPS overlay açıldı" else "FPS overlay kapatıldı")
     }
 
+    // Oyun modu
+    fun setGameModeEnabled(context: android.content.Context, enabled: Boolean) {
+        AppPrefs.gameModeEnabled = enabled
+        _state.value = _state.value.copy(gameModeEnabled = enabled,
+            statusMessage = if (enabled) "Oyun modu servisi başlatıldı" else "Oyun modu durduruldu")
+        if (enabled) GameModeService.start(context)
+        else GameModeService.stop(context)
+    }
+    fun addGameApp(packageName: String) {
+        val apps = _state.value.gameApps.toMutableSet().also { it.add(packageName) }
+        AppPrefs.saveGameApps(apps)
+        _state.value = _state.value.copy(gameApps = apps, statusMessage = "Oyun uygulaması eklendi: $packageName")
+    }
+    fun removeGameApp(packageName: String) {
+        val apps = _state.value.gameApps.toMutableSet().also { it.remove(packageName) }
+        AppPrefs.saveGameApps(apps)
+        _state.value = _state.value.copy(gameApps = apps)
+    }
+
+    // Termal bildirim
+    fun setThermalAlert(context: android.content.Context, enabled: Boolean, tempC: Int) {
+        AppPrefs.thermalAlertEnabled = enabled
+        AppPrefs.thermalAlertTempC = tempC
+        _state.value = _state.value.copy(thermalAlertEnabled = enabled, thermalAlertTempC = tempC,
+            statusMessage = if (enabled) "Termal uyarı aktif: ≥${tempC}°C" else "Termal uyarı kapatıldı")
+        if (enabled) ThermalNotificationService.start(context)
+        else ThermalNotificationService.stop(context)
+    }
+
+    // Önyükleme scripti
+    fun loadBootScript() = update {
+        _state.value.copy(
+            bootScriptExists = BootScriptManager.isScriptExists(),
+            bootScriptContent = BootScriptManager.getScriptContent()
+        )
+    }
+    fun saveBootScript(content: String) = update {
+        BootScriptManager.saveScript(content)
+        _state.value.copy(bootScriptExists = true, bootScriptContent = content,
+            statusMessage = "Önyükleme scripti kaydedildi: ${BootScriptManager.getScriptPath()}")
+    }
+    fun deleteBootScript() = update {
+        BootScriptManager.deleteScript()
+        _state.value.copy(bootScriptExists = false, bootScriptContent = "",
+            statusMessage = "Önyükleme scripti silindi")
+    }
+    fun generateBootScriptFromProfile(profileId: String) = update {
+        val profile = PerformanceProfiles.presets.find { it.id == profileId }
+            ?: PerformanceProfiles.presets[1]
+        val content = BootScriptManager.generateFromProfile(profile)
+        _state.value.copy(bootScriptContent = content)
+    }
+
     // Uygulama başına profil
     fun setAppProfile(packageName: String, profileId: String) {
         val map = _state.value.appProfiles.toMutableMap()
@@ -584,6 +641,27 @@ class MainViewModel(private val context: Context) : ViewModel() {
         val f = java.io.File("/sdcard/DimensityTool/backup.json")
         return if (f.exists()) f.absolutePath else null
     }
+
+    // Termal bildirim
+    var thermalAlertEnabled: Boolean
+        get() = prefs.getBoolean("thermal_alert_enabled", false)
+        set(v) { prefs.edit().putBoolean("thermal_alert_enabled", v).apply() }
+
+    var thermalAlertTempC: Int
+        get() = prefs.getInt("thermal_alert_temp", 75)
+        set(v) { prefs.edit().putInt("thermal_alert_temp", v).apply() }
+
+    // Oyun modu
+    var gameModeEnabled: Boolean
+        get() = prefs.getBoolean("game_mode_enabled", false)
+        set(v) { prefs.edit().putBoolean("game_mode_enabled", v).apply() }
+
+    fun saveGameApps(apps: Set<String>) {
+        prefs.edit().putStringSet("game_apps", apps).apply()
+    }
+
+    fun loadGameApps(): Set<String> =
+        prefs.getStringSet("game_apps", emptySet()) ?: emptySet()
 
     override fun onCleared() {
         super.onCleared()

@@ -26,6 +26,8 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Benchmark     : Screen("benchmark",   "Benchmark",       Icons.Default.Speed)
     object BackupRestore : Screen("backup",      "Yedek / Geri Yükle", Icons.Default.Backup)
     object SleepMode     : Screen("sleep",       "Uyku Modu",       Icons.Default.Bedtime)
+    object GameMode      : Screen("gamemode",    "Oyun Modu",       Icons.Default.SportsEsports)
+    object BootScript    : Screen("bootscript",  "Önyükleme Scripti", Icons.Default.Code)
     object Appearance    : Screen("appearance",  "Görünüm",         Icons.Default.Palette)
     object System        : Screen("system",      "Sistem",          Icons.Default.Settings)
     object Hardware      : Screen("hardware",    "Donanım",         Icons.Default.Hardware)
@@ -75,6 +77,8 @@ val drawerGroups = listOf(
         Screen.Logcat
     )),
     DrawerGroup("Araçlar", listOf(
+        Screen.GameMode,
+        Screen.BootScript,
         Screen.BackupRestore,
         Screen.SleepMode
     )),
