@@ -101,6 +101,20 @@ class MainViewModel(private val context: Context) : ViewModel() {
         DeviceInfo.setCpuMinFreq(freqKhz)
         _state.value.copy(cpuInfo = DeviceInfo.getCpuInfo(), statusMessage = "CPU min frekans ayarlandı")
     }
+    fun setCpuMinFreqCluster(cluster: String, freqKhz: String) = update {
+        when (cluster) {
+            "little" -> DeviceInfo.setCpuMinFreqCluster(freqKhz, _state.value.cpuInfo?.clusterBig?.maxFreqKhz ?: freqKhz, _state.value.cpuInfo?.clusterPrime?.maxFreqKhz ?: freqKhz)
+            "big"    -> DeviceInfo.setCpuMinFreqCluster(_state.value.cpuInfo?.clusterLittle?.maxFreqKhz ?: freqKhz, freqKhz, _state.value.cpuInfo?.clusterPrime?.maxFreqKhz ?: freqKhz)
+            "prime"  -> DeviceInfo.setCpuMinFreqCluster(_state.value.cpuInfo?.clusterLittle?.maxFreqKhz ?: freqKhz, _state.value.cpuInfo?.clusterBig?.maxFreqKhz ?: freqKhz, freqKhz)
+        }
+        val mhz = freqKhz.toLongOrNull()?.let { "${it / 1000} MHz" } ?: freqKhz
+        _state.value.copy(cpuInfo = DeviceInfo.getCpuInfo(), statusMessage = "$cluster min: $mhz")
+    }
+    fun setCpuCoreOnline(core: Int, online: Boolean) = update {
+        DeviceInfo.setCpuCoreOnline(core, online)
+        _state.value.copy(cpuInfo = DeviceInfo.getCpuInfo(),
+            statusMessage = "cpu$core: ${if (online) "online" else "offline"}")
+    }
     // Tek çekirdek max frekans
     fun setCpuMaxFreqSingle(core: Int, freqKhz: String) = update {
         RootUtils.writeFile("/sys/devices/system/cpu/cpu$core/cpufreq/scaling_max_freq", freqKhz)
@@ -117,6 +131,16 @@ class MainViewModel(private val context: Context) : ViewModel() {
     fun setGpuGovernor(gov: String) = update {
         DeviceInfo.setGpuGovernor(gov)
         _state.value.copy(gpuInfo = DeviceInfo.getGpuInfo(), statusMessage = "GPU governor: $gov")
+    }
+    fun setGpuMaxFreq(hz: String) = update {
+        DeviceInfo.setGpuMaxFreq(hz)
+        val mhz = hz.toLongOrNull()?.let { "${it / 1_000_000} MHz" } ?: hz
+        _state.value.copy(gpuInfo = DeviceInfo.getGpuInfo(), statusMessage = "GPU max: $mhz")
+    }
+    fun setGpuMinFreq(hz: String) = update {
+        DeviceInfo.setGpuMinFreq(hz)
+        val mhz = hz.toLongOrNull()?.let { "${it / 1_000_000} MHz" } ?: hz
+        _state.value.copy(gpuInfo = DeviceInfo.getGpuInfo(), statusMessage = "GPU min: $mhz")
     }
 
     // Batarya

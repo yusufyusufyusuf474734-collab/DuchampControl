@@ -249,6 +249,11 @@ object DeviceInfo {
 
     fun setCpuMinFreq(freqKhz: String): Boolean = setCpuMinFreqCluster(freqKhz, freqKhz, freqKhz)
 
+    fun setCpuCoreOnline(core: Int, online: Boolean): Boolean {
+        if (core == 0) return false // cpu0 her zaman online
+        return RootUtils.writeFile("/sys/devices/system/cpu/cpu$core/online", if (online) "1" else "0")
+    }
+
     fun setCpuMaxFreqSingle(policyOrCore: Int, freqKhz: String): Boolean {
         val policy = when (policyOrCore) { in 0..3 -> 0; in 4..6 -> 4; else -> 7 }
         return RootUtils.writeFile("/sys/devices/system/cpu/cpufreq/policy$policy/scaling_max_freq", freqKhz)
