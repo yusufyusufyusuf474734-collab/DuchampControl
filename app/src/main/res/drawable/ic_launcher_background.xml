@@ -5,22 +5,25 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Gradient background: deep purple to dark -->
+    <!-- Koyu lacivert zemin -->
     <path
-        android:fillColor="#1A0533"
+        android:fillColor="#0D1321"
         android:pathData="M0,0 L108,0 L108,108 L0,108 Z"/>
 
-    <!-- Subtle grid lines -->
+    <!-- Sol alt köşe accent -->
     <path
-        android:strokeColor="#7C4DFF"
-        android:strokeWidth="0.5"
-        android:strokeAlpha="0.3"
-        android:pathData="M0,27 L108,27 M0,54 L108,54 M0,81 L108,81 M27,0 L27,108 M54,0 L54,108 M81,0 L81,108"/>
+        android:fillColor="#1C2333"
+        android:pathData="M0,108 L50,108 L0,58 Z"/>
 
-    <!-- Corner accent dots -->
-    <path android:fillColor="#7C4DFF" android:fillAlpha="0.5" android:pathData="M8,8 A4,4 0 1,1 7.99,8 Z"/>
-    <path android:fillColor="#7C4DFF" android:fillAlpha="0.5" android:pathData="M100,8 A4,4 0 1,1 99.99,8 Z"/>
-    <path android:fillColor="#7C4DFF" android:fillAlpha="0.5" android:pathData="M8,100 A4,4 0 1,1 7.99,100 Z"/>
-    <path android:fillColor="#7C4DFF" android:fillAlpha="0.5" android:pathData="M100,100 A4,4 0 1,1 99.99,100 Z"/>
+    <!-- Sağ üst köşe accent -->
+    <path
+        android:fillColor="#1C2333"
+        android:pathData="M108,0 L58,0 L108,50 Z"/>
+
+    <!-- Merkez glow halkası (çok hafif) -->
+    <path
+        android:fillColor="#3B82F6"
+        android:fillAlpha="0.06"
+        android:pathData="M54,18 A36,36 0 1,1 53.99,18 Z"/>
 
 </vector>
