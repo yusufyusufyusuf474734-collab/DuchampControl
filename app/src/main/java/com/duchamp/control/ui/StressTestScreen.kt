@@ -21,7 +21,7 @@ import com.duchamp.control.StressLogEntry
 @Composable
 fun StressTestScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifier) {
     var duration by remember { mutableIntStateOf(60) }
-    val isRunning = isRunning
+    val isRunning = state.stressTestRunning
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
