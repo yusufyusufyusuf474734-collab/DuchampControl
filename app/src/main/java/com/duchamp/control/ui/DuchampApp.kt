@@ -146,6 +146,7 @@ fun DuchampApp(vm: MainViewModel) {
     ) {
         Scaffold(
             topBar = {
+                TopAppBar(
                     title = {
                         Column {
                             Text(currentScreen.title,
@@ -192,15 +193,15 @@ fun DuchampApp(vm: MainViewModel) {
                 )
             },
             bottomBar = {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    thickness = 0.5.dp
+                )
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp,
                     windowInsets = NavigationBarDefaults.windowInsets
                 ) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                        thickness = 0.5.dp
-                    )
                     bottomNavScreens.forEach { screen ->
                         NavigationBarItem(
                             selected = currentScreen == screen,
