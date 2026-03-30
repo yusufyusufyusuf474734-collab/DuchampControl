@@ -146,7 +146,6 @@ fun DuchampApp(vm: MainViewModel) {
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
                     title = {
                         Column {
                             Text(currentScreen.title,
@@ -188,13 +187,15 @@ fun DuchampApp(vm: MainViewModel) {
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         scrolledContainerColor = MaterialTheme.colorScheme.surface
-                    )
+                    ),
+                    windowInsets = TopAppBarDefaults.windowInsets
                 )
             },
             bottomBar = {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 0.dp
+                    tonalElevation = 0.dp,
+                    windowInsets = NavigationBarDefaults.windowInsets
                 ) {
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
@@ -227,7 +228,8 @@ fun DuchampApp(vm: MainViewModel) {
                     )
                 }
             },
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background,
+            contentWindowInsets = WindowInsets(0)
         ) { padding ->
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
