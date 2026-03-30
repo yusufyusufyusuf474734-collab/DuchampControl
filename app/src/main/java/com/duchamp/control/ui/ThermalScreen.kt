@@ -2,7 +2,6 @@ package com.duchamp.control.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -10,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.duchamp.control.AppState
 import com.duchamp.control.MainViewModel
@@ -18,7 +18,7 @@ import com.duchamp.control.ThermalInfo
 
 @Composable
 fun ThermalScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifier) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     var alertTempC by remember { mutableFloatStateOf(state.thermalAlertTempC.toFloat()) }
     var throttleTempC by remember { mutableFloatStateOf(state.thermalThrottleTempC.toFloat()) }
 
@@ -123,13 +123,17 @@ fun ThermalScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
                             Icon(Icons.Default.CheckCircle, null,
                                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("≥${throttleTempC.toInt()}°C → ${
-                                PerformanceProfiles.presets.find { it.id == state.thermalThrottleProfileId }?.name ?: state.thermalThrottleProfileId
-                            }",
+                            Text(
+                                "≥${throttleTempC.toInt()}°C → ${
+                                    PerformanceProfiles.presets.find { it.id == state.thermalThrottleProfileId }?.name
+                                        ?: state.thermalThrottleProfileId
+                                }",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary)
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
+                }
             }
         }
 
@@ -156,8 +160,10 @@ fun ThermalScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
                         description = "Dokunuş anında CPU frekansını geçici artır",
                         checked = eas.cpuInputBoostEnabled,
                         onCheckedChange = {
-                            vm.setMtkParam("/sys/module/cpu_boost/parameters/input_boost_enabled",
-                                if (it) "1" else "0", "CPU Input Boost")
+                            vm.setMtkParam(
+                                "/sys/module/cpu_boost/parameters/input_boost_enabled",
+                                if (it) "1" else "0", "CPU Input Boost"
+                            )
                         }
                     )
                     SectionDivider()
@@ -240,13 +246,8 @@ fun ThermalZoneRow(t: ThermalInfo) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier.size(8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(shape = MaterialTheme.shapes.extraSmall, color = color,
-                modifier = Modifier.size(8.dp)) {}
-        }
+        Surface(shape = MaterialTheme.shapes.extraSmall, color = color,
+            modifier = Modifier.size(8.dp)) {}
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(t.zone, style = MaterialTheme.typography.bodySmall,
