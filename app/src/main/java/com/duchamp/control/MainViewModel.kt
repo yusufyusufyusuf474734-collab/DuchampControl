@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class MainViewModel(context: Context) : ViewModel() {
+class MainViewModel(private val context: Context) : ViewModel() {
 
     private val _state = MutableStateFlow(AppState())
     val state: StateFlow<AppState> = _state
