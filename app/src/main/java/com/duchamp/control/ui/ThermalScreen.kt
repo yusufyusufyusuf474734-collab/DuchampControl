@@ -71,6 +71,7 @@ fun ThermalScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
 
         // Termal throttle
         item {
+            SectionCard("Otomatik Termal Throttle", Icons.Default.Thermostat) {
                 Text(
                     "CPU sıcaklığı belirlenen eşiği aştığında seçili profil otomatik uygulanır.",
                     style = MaterialTheme.typography.bodySmall,
@@ -129,7 +130,6 @@ fun ThermalScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
                                 color = MaterialTheme.colorScheme.primary)
                         }
                     }
-                }
             }
         }
 

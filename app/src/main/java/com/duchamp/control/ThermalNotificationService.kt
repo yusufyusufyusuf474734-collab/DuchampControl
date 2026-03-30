@@ -28,6 +28,7 @@ class ThermalNotificationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        AppPrefs.init(this)
         createChannel()
         startForeground(NOTIF_ID, buildNotif("Termal İzleme Aktif", "Sıcaklık eşiği izleniyor..."))
     }
@@ -41,11 +42,11 @@ class ThermalNotificationService : Service() {
         scope.launch {
             while (isActive) {
                 val prefs = AppPrefs
-                if (prefs.thermalAlertEnabled) {
+                if (AppPrefs.thermalAlertEnabled) {
                     val tempRaw = RootUtils.readSysfs("/sys/class/thermal/thermal_zone0/temp")
                         .toIntOrNull() ?: 0
-                    val tempC = if (tempRaw > 1000) tempRaw / 1000 else tempRaw
-                    val threshold = prefs.thermalAlertTempC
+                    val tempC: Int = if (tempRaw > 1000) tempRaw / 1000 else tempRaw
+                    val threshold: Int = AppPrefs.thermalAlertTempC
 
                     if (tempC >= threshold) {
                         val now = System.currentTimeMillis()

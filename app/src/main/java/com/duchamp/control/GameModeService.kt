@@ -38,6 +38,7 @@ class GameModeService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        AppPrefs.init(this)
         createNotificationChannel()
     }
 

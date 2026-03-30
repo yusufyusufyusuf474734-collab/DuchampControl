@@ -177,6 +177,27 @@ object AppPrefs {
         get() = prefs.getString("schedule_rules", "[]") ?: "[]"
         set(v) { prefs.edit().putString("schedule_rules", v).apply() }
 
+    // Oyun modu
+    var gameModeEnabled: Boolean
+        get() = prefs.getBoolean("game_mode_enabled", false)
+        set(v) { prefs.edit().putBoolean("game_mode_enabled", v).apply() }
+
+    fun saveGameApps(apps: Set<String>) {
+        prefs.edit().putStringSet("game_apps", apps).apply()
+    }
+
+    fun loadGameApps(): Set<String> =
+        prefs.getStringSet("game_apps", emptySet()) ?: emptySet()
+
+    // Termal bildirim
+    var thermalAlertEnabled: Boolean
+        get() = prefs.getBoolean("thermal_alert_enabled", false)
+        set(v) { prefs.edit().putBoolean("thermal_alert_enabled", v).apply() }
+
+    var thermalAlertTempC: Int
+        get() = prefs.getInt("thermal_alert_temp", 75)
+        set(v) { prefs.edit().putInt("thermal_alert_temp", v).apply() }
+
     fun saveScheduleRules(rules: List<ScheduleRule>) {
         val json = buildString {
             append("[")
