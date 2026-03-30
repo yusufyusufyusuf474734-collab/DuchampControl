@@ -96,5 +96,22 @@ data class AppState(
     // APK yedekleme
     val apkBackupStatus: String = "",
     // Uygulama boyut analizi
-    val appSizeList: List<Pair<String, Long>> = emptyList()
+    val appSizeList: List<Pair<String, Long>> = emptyList(),
+    // Özel profiller
+    val customProfiles: List<CustomProfile> = emptyList(),
+    // Profil istatistikleri
+    val profileStats: Map<String, Int> = emptyMap(),
+    // Stres testi
+    val stressTestRunning: Boolean = false,
+    val stressTestTempHistory: List<LiveMetric> = emptyList(),
+    // Debloat
+    val debloatList: List<DebloatApp> = emptyList(),
+    // Kernel parametreleri
+    val kernelParams: List<KernelParam> = emptyList(),
+    // Dmesg
+    val dmesgLines: List<String> = emptyList(),
+    // Reboot menüsü
+    val rebootMenuVisible: Boolean = false,
+    // Quick Tile
+    val quickTileProfileId: String = "balanced"
 )

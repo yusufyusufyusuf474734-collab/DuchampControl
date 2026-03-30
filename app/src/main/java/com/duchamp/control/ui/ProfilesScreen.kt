@@ -88,6 +88,45 @@ fun ProfilesScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
                 state.networkInfo?.let { InfoRow("TCP Congestion", it.tcpCongestion) }
             }
         }
+
+        // Quick Tile ayarı
+        item {
+            SectionCard("Bildirim Çubuğu Tile", Icons.Default.Notifications) {
+                Text("Bildirim çubuğuna DimensityTool tile'ı ekleyerek hızlıca profil değiştirebilirsiniz.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(10.dp))
+                Text("Tile Profili",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    PerformanceProfiles.presets.forEach { p ->
+                        FilterChip(
+                            selected = state.quickTileProfileId == p.id,
+                            onClick = { vm.setQuickTileProfile(p.id) },
+                            label = { Text(p.name, style = MaterialTheme.typography.labelSmall) },
+                            leadingIcon = { Icon(profileIcon(p.id), null, modifier = Modifier.size(14.dp)) }
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Row(modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Info, null, modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Tile'ı eklemek için: Bildirim çubuğunu aşağı çekin → Düzenle → DimensityTool Profil",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -280,6 +280,12 @@ fun DuchampApp(vm: MainViewModel) {
                 Screen.SleepMode    -> SleepModeScreen(state, vm, m)
                 Screen.GameMode     -> GameModeScreen(state, vm, m)
                 Screen.BootScript   -> BootScriptScreen(state, vm, m)
+                Screen.CustomProfiles -> CustomProfilesScreen(state, vm, m)
+                Screen.Debloat      -> DebloatScreen(state, vm, m)
+                Screen.KernelParams -> KernelParamsScreen(state, vm, m)
+                Screen.Dmesg        -> DmesgScreen(state, vm, m)
+                Screen.RebootMenu   -> RebootMenuScreen(state, vm, m)
+                Screen.CameraOpt    -> CameraOptScreen(state, vm, m)
                 Screen.About        -> AboutScreen(m)
                 else                -> DashboardScreen(state, vm, m)
             }

@@ -28,6 +28,12 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object SleepMode     : Screen("sleep",       "Uyku Modu",       Icons.Default.Bedtime)
     object GameMode      : Screen("gamemode",    "Oyun Modu",       Icons.Default.SportsEsports)
     object BootScript    : Screen("bootscript",  "Önyükleme Scripti", Icons.Default.Code)
+    object CustomProfiles: Screen("custprof",    "Özel Profiller",  Icons.Default.AddCircle)
+    object Debloat       : Screen("debloat",     "Debloat",         Icons.Default.CleaningServices)
+    object KernelParams  : Screen("kparams",     "Kernel Parametreleri", Icons.Default.Tune)
+    object Dmesg         : Screen("dmesg",       "Dmesg",           Icons.Default.Terminal)
+    object RebootMenu    : Screen("reboot",      "Yeniden Başlat",  Icons.Default.RestartAlt)
+    object CameraOpt     : Screen("camera",      "Kamera",          Icons.Default.CameraAlt)
     object Appearance    : Screen("appearance",  "Görünüm",         Icons.Default.Palette)
     object System        : Screen("system",      "Sistem",          Icons.Default.Settings)
     object Hardware      : Screen("hardware",    "Donanım",         Icons.Default.Hardware)
@@ -80,7 +86,17 @@ val drawerGroups = listOf(
         Screen.GameMode,
         Screen.BootScript,
         Screen.BackupRestore,
-        Screen.SleepMode
+        Screen.SleepMode,
+        Screen.RebootMenu
+    )),
+    DrawerGroup("Optimizasyon", listOf(
+        Screen.CustomProfiles,
+        Screen.Debloat,
+        Screen.CameraOpt
+    )),
+    DrawerGroup("Gelişmiş", listOf(
+        Screen.KernelParams,
+        Screen.Dmesg
     )),
     DrawerGroup("Kişiselleştirme", listOf(
         Screen.Appearance,

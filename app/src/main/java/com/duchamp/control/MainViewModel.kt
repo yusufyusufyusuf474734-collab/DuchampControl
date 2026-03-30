@@ -41,6 +41,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
             nightChargeStartHour = AppPrefs.nightChargeStartHour,
             nightChargeEndHour = AppPrefs.nightChargeEndHour,
             nightChargeLimitPct = AppPrefs.nightChargeLimitPct,
+            quickTileProfileId = AppPrefs.quickTileProfileId,
             kernelKitInstalled = KernelKitInstaller.isInstalled(),
             kernelKitEnabled = KernelKitInstaller.isEnabled()
         )
@@ -748,6 +749,111 @@ class MainViewModel(private val context: Context) : ViewModel() {
                 statusMessage = "APK yedeklendi: $appLabel")
         } else {
             _state.value.copy(apkBackupStatus = "APK bulunamadı: $packageName")
+        }
+    }
+
+    // Özel profiller
+    fun addCustomProfile(profile: CustomProfile) {
+        val list = _state.value.customProfiles + profile
+        _state.value = _state.value.copy(customProfiles = list, statusMessage = "Profil oluşturuldu: ${profile.name}")
+    }
+    fun deleteCustomProfile(id: String) {
+        val list = _state.value.customProfiles.filter { it.id != id }
+        _state.value = _state.value.copy(customProfiles = list)
+    }
+    fun applyCustomProfile(profile: CustomProfile) = update {
+        DeviceInfo.setCpuGovernor(profile.cpuGovernor)
+        DeviceInfo.setGpuGovernor(profile.gpuGovernor)
+        DeviceInfo.setTouchPollingRate(profile.touchPollingRate)
+        DeviceInfo.setSwappiness(profile.swappiness)
+        DeviceInfo.setTcpCongestion(profile.tcpCongestion)
+        val stats = _state.value.profileStats.toMutableMap()
+        stats[profile.id] = (stats[profile.id] ?: 0) + 1
+        _state.value.copy(
+            cpuInfo = DeviceInfo.getCpuInfo(),
+            gpuInfo = DeviceInfo.getGpuInfo(),
+            profileStats = stats,
+            statusMessage = "Özel profil uygulandı: ${profile.name}"
+        )
+    }
+
+    // Debloat
+    fun loadDebloatStatus() = update {
+        val list = com.duchamp.control.ui.miuiDebloatList.map { app ->
+            val enabled = RootUtils.runCommand("pm list packages -d | grep ${app.packageName}").isBlank()
+            app.copy(disabled = !enabled)
+        }
+        _state.value.copy(debloatList = list)
+    }
+    fun disableDebloatApp(pkg: String) = update {
+        RootUtils.runCommand("pm disable-user --user 0 $pkg")
+        val list = _state.value.debloatList.map { if (it.packageName == pkg) it.copy(disabled = true) else it }
+        _state.value.copy(debloatList = list, statusMessage = "Devre dışı: $pkg")
+    }
+    fun enableDebloatApp(pkg: String) = update {
+        RootUtils.runCommand("pm enable $pkg")
+        val list = _state.value.debloatList.map { if (it.packageName == pkg) it.copy(disabled = false) else it }
+        _state.value.copy(debloatList = list, statusMessage = "Etkinleştirildi: $pkg")
+    }
+    fun disableAllDebloat(apps: List<DebloatApp>) = update {
+        apps.forEach { RootUtils.runCommand("pm disable-user --user 0 ${it.packageName}") }
+        val list = _state.value.debloatList.map { app ->
+            if (apps.any { it.packageName == app.packageName }) app.copy(disabled = true) else app
+        }
+        _state.value.copy(debloatList = list, statusMessage = "${apps.size} uygulama devre dışı bırakıldı")
+    }
+
+    // Kernel parametreleri
+    fun loadKernelParams() = update {
+        val paths = listOf("/proc/sys/vm", "/proc/sys/kernel", "/proc/sys/net/ipv4", "/proc/sys/fs")
+        val params = paths.flatMap { dir ->
+            val files = RootUtils.runCommand("ls $dir 2>/dev/null").lines().filter { it.isNotBlank() }
+            files.mapNotNull { file ->
+                val path = "$dir/$file"
+                val value = RootUtils.runCommand("cat $path 2>/dev/null").trim()
+                if (value.isNotBlank() && !value.contains("\n"))
+                    KernelParam(path, file, value)
+                else null
+            }
+        }
+        _state.value.copy(kernelParams = params)
+    }
+
+    // Dmesg
+    fun loadDmesg() = update {
+        val lines = RootUtils.runCommand("dmesg 2>/dev/null | tail -500").lines()
+            .filter { it.isNotBlank() }
+        _state.value.copy(dmesgLines = lines)
+    }
+
+    // Reboot
+    fun reboot(command: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            RootUtils.runCommand(command)
+        }
+    }
+
+    // Quick Tile
+    fun setQuickTileProfile(profileId: String) {
+        AppPrefs.quickTileProfileId = profileId
+        _state.value = _state.value.copy(quickTileProfileId = profileId,
+            statusMessage = "Tile profili: $profileId")
+    }
+
+    // Kamera optimizasyonu
+    fun applyCameraPreset(preset: String) = update {
+        if (preset == "quality") {
+            val props = mapOf(
+                "persist.vendor.camera.preview.display_60fps" to "1",
+                "persist.vendor.camera.isp.tuning.enable" to "1",
+                "persist.vendor.camera.hdr.enable" to "1",
+                "persist.vendor.camera.night.mode.enable" to "1",
+                "persist.vendor.camera.video.hdr.enable" to "1"
+            )
+            props.forEach { (k, v) -> RootUtils.runCommand("setprop $k $v") }
+            _state.value.copy(statusMessage = "Kamera kalite preset'i uygulandı")
+        } else {
+            _state.value.copy(statusMessage = "Kamera ayarları sıfırlandı")
         }
     }
 

@@ -45,6 +45,38 @@ data class ScheduleRule(
     val customActions: List<String> = emptyList() // "cpu:schedutil", "polling:120" vb.
 )
 
+// ── Özel Profil ──────────────────────────────────────────────────────────────
+
+data class CustomProfile(
+    val id: String,
+    val name: String,
+    val cpuGovernor: String,
+    val gpuGovernor: String,
+    val touchPollingRate: Int,
+    val swappiness: Int,
+    val tcpCongestion: String,
+    val description: String = ""
+)
+
+// ── Debloat ───────────────────────────────────────────────────────────────────
+
+data class DebloatApp(
+    val packageName: String,
+    val label: String,
+    val category: String,
+    val safe: Boolean,
+    val disabled: Boolean = false
+)
+
+// ── Kernel Parametresi ────────────────────────────────────────────────────────
+
+data class KernelParam(
+    val path: String,
+    val name: String,
+    val value: String,
+    val description: String = ""
+)
+
 // ── MTK EAS/HMP ──────────────────────────────────────────────────────────────
 
 data class MtkEasInfo(
@@ -220,9 +252,9 @@ object AppPrefs {
         get() = prefs.getInt("night_charge_end", 7)
         set(v) { prefs.edit().putInt("night_charge_end", v).apply() }
 
-    var nightChargeLimitPct: Int
-        get() = prefs.getInt("night_charge_limit", 80)
-        set(v) { prefs.edit().putInt("night_charge_limit", v).apply() }
+    var quickTileProfileId: String
+        get() = prefs.getString("quick_tile_profile", "balanced") ?: "balanced"
+        set(v) { prefs.edit().putString("quick_tile_profile", v).apply() }
 
     fun saveScheduleRules(rules: List<ScheduleRule>) {
         val json = buildString {
