@@ -1,6 +1,8 @@
 package com.duchamp.control.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -32,98 +34,104 @@ fun DuchampApp(vm: MainViewModel) {
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(290.dp)) {
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Icon(Icons.Default.PhoneAndroid, null,
-                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("DimensityTool", style = MaterialTheme.typography.titleMedium)
-                        Text("by Sinan Aslan",
+                    Spacer(Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.PhoneAndroid, null,
+                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("DimensityTool", style = MaterialTheme.typography.titleMedium)
+                            Text("by Sinan Aslan",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary)
+                            Text("Poco X6 Pro / Redmi K70E",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (state.isRooted) {
+                            Surface(shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.primaryContainer) {
+                                Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Security, null, Modifier.size(12.dp),
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Root Aktif", style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                }
+                            }
+                        }
+                        state.rootInfo?.let { ri ->
+                            Surface(shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.secondaryContainer) {
+                                Text(ri.rootType, style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                            }
+                        }
+                        if (state.liveMonitoringActive) {
+                            Surface(shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.tertiaryContainer) {
+                                Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Circle, null, Modifier.size(8.dp),
+                                        tint = MaterialTheme.colorScheme.error)
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Canlı", style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                }
+                            }
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    drawerGroups.forEach { group ->
+                        Text(group.title.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary)
-                        Text("Poco X6 Pro / Redmi K70E",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                    }
-                }
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (state.isRooted) {
-                        Surface(shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.primaryContainer) {
-                            Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Security, null, Modifier.size(12.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Root Aktif", style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer)
-                            }
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                        group.screens.forEach { screen ->
+                            NavigationDrawerItem(
+                                icon = { Icon(screen.icon, null, modifier = Modifier.size(20.dp)) },
+                                label = { Text(screen.title, style = MaterialTheme.typography.bodyMedium) },
+                                selected = currentScreen == screen,
+                                onClick = {
+                                    currentScreen = screen
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 1.dp)
+                            )
                         }
+                        Spacer(Modifier.height(4.dp))
                     }
-                    state.rootInfo?.let { ri ->
-                        Surface(shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.secondaryContainer) {
-                            Text(ri.rootType, style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
-                        }
-                    }
-                    if (state.liveMonitoringActive) {
-                        Surface(shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.tertiaryContainer) {
-                            Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Circle, null, Modifier.size(8.dp),
-                                    tint = MaterialTheme.colorScheme.error)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Canlı", style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer)
-                            }
-                        }
-                    }
-                }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                drawerGroups.forEach { group ->
-                    Text(group.title.uppercase(),
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "© Sinan Aslan",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-                    group.screens.forEach { screen ->
-                        NavigationDrawerItem(
-                            icon = { Icon(screen.icon, null, modifier = Modifier.size(20.dp)) },
-                            label = { Text(screen.title, style = MaterialTheme.typography.bodyMedium) },
-                            selected = currentScreen == screen,
-                            onClick = {
-                                currentScreen = screen
-                                scope.launch { drawerState.close() }
-                            },
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 1.dp)
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                    Text(
+                        "DimensityTool v1.0 · MT6897",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)
+                    )
                 }
-                Spacer(Modifier.height(16.dp))
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "© Sinan Aslan",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-                Text(
-                    "DimensityTool v1.0 · MT6897",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)
-                )
             }
         }
     ) {

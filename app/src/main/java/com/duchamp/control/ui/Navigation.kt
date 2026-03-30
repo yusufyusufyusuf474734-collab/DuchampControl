@@ -33,8 +33,8 @@ val bottomNavScreens = listOf(
     Screen.Dashboard,
     Screen.LiveMonitor,
     Screen.Profiles,
-    Screen.AppManager,
-    Screen.Appearance
+    Screen.Cpu,
+    Screen.AppManager
 )
 
 data class DrawerGroup(val title: String, val screens: List<Screen>)
