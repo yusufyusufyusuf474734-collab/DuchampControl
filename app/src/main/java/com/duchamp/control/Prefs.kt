@@ -86,6 +86,61 @@ object AppPrefs {
         get() = prefs.getBoolean("dashboard_compact", false)
         set(v) { prefs.edit().putBoolean("dashboard_compact", v).apply() }
 
+    var sleepModeEnabled: Boolean
+        get() = prefs.getBoolean("sleep_mode_enabled", false)
+        set(v) { prefs.edit().putBoolean("sleep_mode_enabled", v).apply() }
+
+    var sleepProfileId: String
+        get() = prefs.getString("sleep_profile_id", "powersave") ?: "powersave"
+        set(v) { prefs.edit().putString("sleep_profile_id", v).apply() }
+
+    var wakeProfileId: String
+        get() = prefs.getString("wake_profile_id", "balanced") ?: "balanced"
+        set(v) { prefs.edit().putString("wake_profile_id", v).apply() }
+
+    fun saveAppProfiles(map: Map<String, String>) {
+        val json = map.entries.joinToString(",", "{", "}") { (k, v) -> "\"$k\":\"$v\"" }
+        prefs.edit().putString("app_profiles", json).apply()
+    }
+
+    fun loadAppProfiles(): Map<String, String> {
+        val json = prefs.getString("app_profiles", "{}") ?: "{}"
+        if (json == "{}") return emptyMap()
+        return try {
+            json.removeSurrounding("{", "}")
+                .split(",")
+                .filter { it.contains(":") }
+                .associate { entry ->
+                    val (k, v) = entry.split(":", limit = 2)
+                    k.trim().removeSurrounding("\"") to v.trim().removeSurrounding("\"")
+                }
+        } catch (e: Exception) { emptyMap() }
+    }
+
+    fun getBackupJson(
+        scheduleRules: List<ScheduleRule>,
+        appProfiles: Map<String, String>,
+        theme: AppTheme,
+        accentIndex: Int,
+        sleepEnabled: Boolean,
+        sleepProfile: String,
+        wakeProfile: String
+    ): String {
+        val rulesJson = buildString {
+            append("[")
+            scheduleRules.forEachIndexed { i, r ->
+                if (i > 0) append(",")
+                append("""{"id":"${r.id}","name":"${r.name}","enabled":${r.enabled},""")
+                append(""""trigger":"${r.trigger.name}","hour":${r.hour},"minute":${r.minute},""")
+                append(""""onCharging":${r.onCharging},"tempThreshold":${r.tempThresholdC},""")
+                append(""""profileId":"${r.profileId}"}""")
+            }
+            append("]")
+        }
+        val appProfilesJson = appProfiles.entries.joinToString(",", "{", "}") { (k, v) -> "\"$k\":\"$v\"" }
+        return """{"version":1,"theme":"${theme.name}","accentIndex":$accentIndex,"scheduleRules":$rulesJson,"appProfiles":$appProfilesJson,"sleepModeEnabled":$sleepEnabled,"sleepProfileId":"$sleepProfile","wakeProfileId":"$wakeProfile"}"""
+    }
+
     var scheduleRulesJson: String
         get() = prefs.getString("schedule_rules", "[]") ?: "[]"
         set(v) { prefs.edit().putString("schedule_rules", v).apply() }

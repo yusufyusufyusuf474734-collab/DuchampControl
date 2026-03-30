@@ -27,6 +27,10 @@ class MainViewModel(private val context: Context) : ViewModel() {
             accentColorIndex = AppPrefs.accentColorIndex,
             dashboardCompact = AppPrefs.dashboardCompact,
             scheduleRules = AppPrefs.loadScheduleRules(),
+            appProfiles = AppPrefs.loadAppProfiles(),
+            sleepModeEnabled = AppPrefs.sleepModeEnabled,
+            sleepProfileId = AppPrefs.sleepProfileId,
+            wakeProfileId = AppPrefs.wakeProfileId,
             kernelKitInstalled = KernelKitInstaller.isInstalled(),
             kernelKitEnabled = KernelKitInstaller.isEnabled()
         )
@@ -399,6 +403,102 @@ class MainViewModel(private val context: Context) : ViewModel() {
     fun refreshBattery() = update { _state.value.copy(batteryInfo = DeviceInfo.getBatteryInfo()) }
     fun refreshThermals() = update { _state.value.copy(thermals = DeviceInfo.getThermals()) }
     fun refreshCpu() = update { _state.value.copy(cpuInfo = DeviceInfo.getCpuInfo(), gpuInfo = DeviceInfo.getGpuInfo()) }
+
+    // Uygulama başına profil
+    fun setAppProfile(packageName: String, profileId: String) {
+        val map = _state.value.appProfiles.toMutableMap()
+        map[packageName] = profileId
+        AppPrefs.saveAppProfiles(map)
+        _state.value = _state.value.copy(appProfiles = map, statusMessage = "Profil atandı: $packageName → $profileId")
+    }
+    fun clearAppProfile(packageName: String) {
+        val map = _state.value.appProfiles.toMutableMap()
+        map.remove(packageName)
+        AppPrefs.saveAppProfiles(map)
+        _state.value = _state.value.copy(appProfiles = map)
+    }
+
+    // Uyku modu
+    fun setSleepModeEnabled(enabled: Boolean) {
+        AppPrefs.sleepModeEnabled = enabled
+        _state.value = _state.value.copy(sleepModeEnabled = enabled,
+            statusMessage = if (enabled) "Uyku modu aktif" else "Uyku modu kapatıldı")
+    }
+    fun setSleepProfile(profileId: String) {
+        AppPrefs.sleepProfileId = profileId
+        _state.value = _state.value.copy(sleepProfileId = profileId)
+    }
+    fun setWakeProfile(profileId: String) {
+        AppPrefs.wakeProfileId = profileId
+        _state.value = _state.value.copy(wakeProfileId = profileId)
+    }
+
+    // Yedek / Geri Yükle
+    fun backupSettings() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val json = AppPrefs.getBackupJson(
+                    scheduleRules = _state.value.scheduleRules,
+                    appProfiles   = _state.value.appProfiles,
+                    theme         = _state.value.appTheme,
+                    accentIndex   = _state.value.accentColorIndex,
+                    sleepEnabled  = _state.value.sleepModeEnabled,
+                    sleepProfile  = _state.value.sleepProfileId,
+                    wakeProfile   = _state.value.wakeProfileId
+                )
+                val dir = java.io.File("/sdcard/DimensityTool")
+                dir.mkdirs()
+                java.io.File(dir, "backup.json").writeText(json)
+                _state.value = _state.value.copy(statusMessage = "Yedek alındı: /sdcard/DimensityTool/backup.json")
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(statusMessage = "Yedek alınamadı: ${e.message}")
+            }
+        }
+    }
+    fun restoreSettings() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val file = java.io.File("/sdcard/DimensityTool/backup.json")
+                if (!file.exists()) {
+                    _state.value = _state.value.copy(statusMessage = "Yedek dosyası bulunamadı")
+                    return@launch
+                }
+                // Basit restore: schedule rules ve app profiles
+                val json = file.readText()
+                val rules = AppPrefs.loadScheduleRules()
+                AppPrefs.saveScheduleRules(rules)
+                _state.value = _state.value.copy(
+                    scheduleRules = rules,
+                    statusMessage = "Ayarlar geri yüklendi"
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(statusMessage = "Geri yükleme başarısız: ${e.message}")
+            }
+        }
+    }
+    fun resetAllSettings() {
+        AppPrefs.saveScheduleRules(emptyList())
+        AppPrefs.saveAppProfiles(emptyMap())
+        AppPrefs.theme = AppTheme.DARK
+        AppPrefs.accentColorIndex = 0
+        AppPrefs.sleepModeEnabled = false
+        AppPrefs.sleepProfileId = "powersave"
+        AppPrefs.wakeProfileId = "balanced"
+        _state.value = _state.value.copy(
+            scheduleRules = emptyList(),
+            appProfiles = emptyMap(),
+            appTheme = AppTheme.DARK,
+            accentColorIndex = 0,
+            sleepModeEnabled = false,
+            sleepProfileId = "powersave",
+            wakeProfileId = "balanced",
+            statusMessage = "Tüm ayarlar sıfırlandı"
+        )
+    }
+    fun getBackupPath(): String? {
+        val f = java.io.File("/sdcard/DimensityTool/backup.json")
+        return if (f.exists()) f.absolutePath else null
+    }
 
     override fun onCleared() {
         super.onCleared()

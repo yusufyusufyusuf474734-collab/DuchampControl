@@ -44,5 +44,11 @@ data class AppState(
     // KernelKit modül durumu
     val kernelKitInstalled: Boolean = false,
     val kernelKitEnabled: Boolean = false,
-    val statusMessage: String = ""
+    val statusMessage: String = "",
+    // Uygulama başına profil
+    val appProfiles: Map<String, String> = emptyMap(),
+    // Uyku modu
+    val sleepModeEnabled: Boolean = false,
+    val sleepProfileId: String = "powersave",
+    val wakeProfileId: String = "balanced"
 )

@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.duchamp.control.MainViewModel
@@ -33,103 +34,111 @@ fun DuchampApp(vm: MainViewModel) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.width(290.dp)) {
+            ModalDrawerSheet(
+                modifier = Modifier.width(300.dp),
+                drawerContainerColor = MaterialTheme.colorScheme.surface,
+                drawerTonalElevation = 0.dp
+            ) {
                 Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .padding(bottom = 16.dp)
+                    modifier = Modifier.verticalScroll(rememberScrollState())
                 ) {
-                    Spacer(Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Header
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
                     ) {
-                        Icon(Icons.Default.PhoneAndroid, null,
-                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
-                        Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("DimensityTool", style = MaterialTheme.typography.titleMedium)
-                            Text("by Sinan Aslan",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary)
-                            Text("Poco X6 Pro / Redmi K70E",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        if (state.isRooted) {
-                            Surface(shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.primaryContainer) {
-                                Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Security, null, Modifier.size(12.dp),
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Root Aktif", style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    modifier = Modifier.size(44.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.PhoneAndroid, null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp))
+                                    }
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Column {
+                                    Text("DimensityTool",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface)
+                                    Text("MT6897 · Poco X6 Pro",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
-                        }
-                        state.rootInfo?.let { ri ->
-                            Surface(shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.secondaryContainer) {
-                                Text(ri.rootType, style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
-                            }
-                        }
-                        if (state.liveMonitoringActive) {
-                            Surface(shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.tertiaryContainer) {
-                                Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Circle, null, Modifier.size(8.dp),
-                                        tint = MaterialTheme.colorScheme.error)
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Canlı", style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer)
+                            Spacer(Modifier.height(12.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                if (state.isRooted) {
+                                    StatusBadge("Root", MaterialTheme.colorScheme.primary)
+                                }
+                                state.rootInfo?.let {
+                                    StatusBadge(it.rootType, MaterialTheme.colorScheme.secondary)
+                                }
+                                if (state.liveMonitoringActive) {
+                                    StatusBadge("● Canlı", MaterialTheme.colorScheme.error)
                                 }
                             }
                         }
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        thickness = 0.5.dp
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    // Menü grupları
                     drawerGroups.forEach { group ->
-                        Text(group.title.uppercase(),
+                        Text(
+                            group.title.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
+                        )
                         group.screens.forEach { screen ->
                             NavigationDrawerItem(
-                                icon = { Icon(screen.icon, null, modifier = Modifier.size(20.dp)) },
-                                label = { Text(screen.title, style = MaterialTheme.typography.bodyMedium) },
+                                icon = {
+                                    Icon(screen.icon, null,
+                                        modifier = Modifier.size(18.dp))
+                                },
+                                label = {
+                                    Text(screen.title,
+                                        style = MaterialTheme.typography.bodyMedium)
+                                },
                                 selected = currentScreen == screen,
                                 onClick = {
                                     currentScreen = screen
                                     scope.launch { drawerState.close() }
                                 },
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 1.dp)
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 1.dp),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
                         }
                         Spacer(Modifier.height(4.dp))
                     }
-                    Spacer(Modifier.height(16.dp))
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "© Sinan Aslan",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        thickness = 0.5.dp,
+                        modifier = Modifier.padding(horizontal = 20.dp)
                     )
+                    Spacer(Modifier.height(12.dp))
                     Text(
-                        "DimensityTool v1.0 · MT6897",
+                        "DimensityTool v1.0 · by Sinan Aslan",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 20.dp)
                     )
                 }
             }
@@ -138,51 +147,99 @@ fun DuchampApp(vm: MainViewModel) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(currentScreen.title) },
+                    title = {
+                        Column {
+                            Text(currentScreen.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, "Menu")
+                            Icon(Icons.Default.Menu, "Menu",
+                                tint = MaterialTheme.colorScheme.onSurface)
                         }
                     },
                     actions = {
                         if (!state.isRooted && !state.isLoading) {
-                            Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Warning, null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(4.dp))
                         }
                         val activeRules = state.scheduleRules.count { it.enabled }
                         if (activeRules > 0) {
-                            BadgedBox(badge = { Badge { Text("$activeRules") } }) {
+                            BadgedBox(badge = {
+                                Badge(containerColor = MaterialTheme.colorScheme.primary) {
+                                    Text("$activeRules")
+                                }
+                            }) {
                                 IconButton(onClick = { currentScreen = Screen.Scheduler }) {
-                                    Icon(Icons.Default.Schedule, "Scheduler")
+                                    Icon(Icons.Default.Schedule, "Scheduler",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
                         IconButton(onClick = { vm.loadAll() }) {
-                            Icon(Icons.Default.Refresh, "Refresh")
+                            Icon(Icons.Default.Refresh, "Refresh",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    )
                 )
             },
             bottomBar = {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp
+                ) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        thickness = 0.5.dp
+                    )
                     bottomNavScreens.forEach { screen ->
                         NavigationBarItem(
                             selected = currentScreen == screen,
                             onClick = { currentScreen = screen },
-                            icon = { Icon(screen.icon, screen.title, modifier = Modifier.size(22.dp)) },
-                            label = { Text(screen.title, style = MaterialTheme.typography.labelSmall) }
+                            icon = { Icon(screen.icon, screen.title, modifier = Modifier.size(20.dp)) },
+                            label = { Text(screen.title, style = MaterialTheme.typography.labelSmall) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
                     }
                 }
             },
-            snackbarHost = { SnackbarHost(snackbarHostState) }
+            snackbarHost = {
+                SnackbarHost(snackbarHostState) { data ->
+                    Snackbar(
+                        snackbarData = data,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp
+                        )
                         Spacer(Modifier.height(16.dp))
-                        Text("Cihaz bilgileri yükleniyor...")
+                        Text("Cihaz bilgileri yükleniyor...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 return@Scaffold
@@ -214,6 +271,10 @@ fun DuchampApp(vm: MainViewModel) {
                 Screen.System       -> SystemScreen(state, vm, m)
                 Screen.Hardware     -> HardwareScreen(state, vm, m)
                 Screen.Logcat       -> LogcatScreen(state, vm, m)
+                Screen.Benchmark    -> BenchmarkScreen(state, vm, m)
+                Screen.AppProfile   -> AppProfileScreen(state, vm, m)
+                Screen.BackupRestore-> BackupRestoreScreen(state, vm, m)
+                Screen.SleepMode    -> SleepModeScreen(state, vm, m)
                 Screen.About        -> AboutScreen(m)
                 else                -> DashboardScreen(state, vm, m)
             }
@@ -226,18 +287,29 @@ fun NoRootScreen(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(40.dp)
         ) {
-            Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(72.dp))
-            Spacer(Modifier.height(16.dp))
-            Text("Root Erişimi Gerekli", style = MaterialTheme.typography.headlineSmall)
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier.size(80.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Warning, null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(40.dp))
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+            Text("Root Erişimi Gerekli",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(8.dp))
             Text(
                 "Bu uygulama Magisk veya KernelSU ile root edilmiş cihazlarda çalışır.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
     }

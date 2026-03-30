@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.duchamp.control.AppState
 import com.duchamp.control.MainViewModel
@@ -21,40 +22,47 @@ fun ProfilesScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item {
-            Text(
-                "Tek tıkla tüm performans parametrelerini ayarla.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        }
-
         // Aktif profil banner
         item {
             val active = PerformanceProfiles.presets.find { it.id == state.activeProfileId }
             if (active != null) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                    ),
+                    elevation = CardDefaults.cardElevation(0.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(profileIcon(active.id), null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(32.dp))
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text("Aktif Profil", style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
-                            Text(active.name, style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer)
-                            Text(active.description, style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(profileIcon(active.id), null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(22.dp))
+                            }
                         }
+                        Spacer(Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Aktif Profil",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(active.name,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary)
+                            Text(active.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        StatusBadge("Aktif", MaterialTheme.colorScheme.tertiary)
                     }
                 }
             }
@@ -70,9 +78,9 @@ fun ProfilesScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
             )
         }
 
-        // Mevcut ayarlar özeti
+        // Mevcut ayarlar
         item {
-            SectionCard("Mevcut Ayarlar", Icons.Default.Info) {
+            SectionCard("Mevcut Sistem Ayarları", Icons.Default.Info) {
                 state.cpuInfo?.let { InfoRow("CPU Governor", it.governor) }
                 state.gpuInfo?.let { InfoRow("GPU Governor", it.governor) }
                 InfoRow("Touch Polling", "${state.touchPollingRate} Hz")
@@ -85,55 +93,84 @@ fun ProfilesScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modi
 
 @Composable
 fun ProfileCard(profile: PerfProfile, isActive: Boolean, onApply: () -> Unit) {
-    val (bgColor, contentColor) = if (isActive)
-        MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
-    else
-        MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        onClick = onApply
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+            else MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(0.dp),
+        onClick = if (!isActive) onApply else ({})
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(profileIcon(profile.id), null,
-                        tint = contentColor, modifier = Modifier.size(28.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(profile.name, style = MaterialTheme.typography.titleMedium, color = contentColor)
-                        Text(profile.description, style = MaterialTheme.typography.bodySmall,
-                            color = contentColor.copy(alpha = 0.7f))
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = if (isActive)
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    else MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(profileIcon(profile.id), null,
+                            tint = if (isActive) MaterialTheme.colorScheme.primary
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp))
                     }
                 }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(profile.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (isActive) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface)
+                    Text(profile.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 if (isActive) {
-                    Icon(Icons.Default.CheckCircle, null, tint = contentColor)
+                    StatusBadge("Aktif", MaterialTheme.colorScheme.primary)
                 } else {
                     OutlinedButton(
                         onClick = onApply,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
-                    ) { Text("Uygula", color = contentColor) }
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text("Uygula", style = MaterialTheme.typography.labelMedium)
+                    }
                 }
             }
 
             Spacer(Modifier.height(12.dp))
-            HorizontalDivider(color = contentColor.copy(alpha = 0.2f))
-            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                thickness = 0.5.dp
+            )
+            Spacer(Modifier.height(10.dp))
 
-            // Parametre özeti
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ProfileParam("CPU", profile.cpuGovernor, contentColor, Modifier.weight(1f))
-                ProfileParam("GPU", profile.gpuGovernor, contentColor, Modifier.weight(1f))
-                ProfileParam("Touch", "${profile.touchPollingRate}Hz", contentColor, Modifier.weight(1f))
-                ProfileParam("TCP", profile.tcpCongestion, contentColor, Modifier.weight(1f))
+                ProfileParam("CPU", profile.cpuGovernor,
+                    if (isActive) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    Modifier.weight(1f))
+                ProfileParam("GPU", profile.gpuGovernor,
+                    if (isActive) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    Modifier.weight(1f))
+                ProfileParam("Touch", "${profile.touchPollingRate}Hz",
+                    if (isActive) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    Modifier.weight(1f))
+                ProfileParam("TCP", profile.tcpCongestion,
+                    if (isActive) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    Modifier.weight(1f))
             }
         }
     }
@@ -142,9 +179,14 @@ fun ProfileCard(profile: PerfProfile, isActive: Boolean, onApply: () -> Unit) {
 @Composable
 fun ProfileParam(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = color.copy(alpha = 0.6f))
-        Text(value, style = MaterialTheme.typography.labelMedium, color = color,
-            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        Text(value,
+            style = MaterialTheme.typography.labelMedium,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis)
+        Text(label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
