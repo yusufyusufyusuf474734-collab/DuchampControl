@@ -124,6 +124,9 @@ fun DuchampApp(vm: MainViewModel) {
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                     modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)
                 )
+            }
+        }
+    ) {
         Scaffold(
             topBar = {
                 TopAppBar(
