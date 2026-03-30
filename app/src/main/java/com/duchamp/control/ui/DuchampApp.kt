@@ -36,8 +36,8 @@ fun DuchampApp(vm: MainViewModel) {
             ModalDrawerSheet(modifier = Modifier.width(290.dp)) {
                 Column(
                     modifier = Modifier
-                        .fillMaxHeight()
                         .verticalScroll(rememberScrollState())
+                        .padding(bottom = 16.dp)
                 ) {
                     Spacer(Modifier.height(16.dp))
                     Row(
