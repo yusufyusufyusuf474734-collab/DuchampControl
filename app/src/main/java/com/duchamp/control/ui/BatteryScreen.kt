@@ -193,5 +193,109 @@ fun BatteryScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
                 )
             }
         }
+
+        // Pil bildirimi
+        item {
+            SectionCard("Şarj Bildirimi", Icons.Default.NotificationsActive) {
+                var notifyPct by remember { mutableFloatStateOf(state.chargeNotifyPct.toFloat()) }
+                Text("Belirtilen şarj seviyesine ulaşınca bildirim gönderir.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(10.dp))
+                ControlRow(
+                    label = "Şarj Bildirimi",
+                    description = "Hedef şarj seviyesine ulaşınca uyar",
+                    checked = state.chargeNotifyEnabled,
+                    onCheckedChange = { vm.setChargeNotify(it, notifyPct.toInt()) }
+                )
+                Spacer(Modifier.height(8.dp))
+                SliderRow(
+                    label = "Bildirim Eşiği",
+                    value = notifyPct,
+                    valueRange = 50f..100f,
+                    steps = 9,
+                    displayValue = "${notifyPct.toInt()}%",
+                    onValueChangeFinished = {
+                        notifyPct = it
+                        vm.setChargeNotify(state.chargeNotifyEnabled, it.toInt())
+                    }
+                )
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(70, 80, 85, 90, 100).forEach { pct ->
+                        FilterChip(
+                            selected = notifyPct.toInt() == pct,
+                            onClick = { notifyPct = pct.toFloat(); vm.setChargeNotify(state.chargeNotifyEnabled, pct) },
+                            label = { Text("$pct%", style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Gece şarj modu
+        item {
+            SectionCard("Gece Şarj Modu", Icons.Default.Bedtime) {
+                var startHour by remember { mutableIntStateOf(state.nightChargeStartHour) }
+                var endHour by remember { mutableIntStateOf(state.nightChargeEndHour) }
+                var limitPct by remember { mutableFloatStateOf(state.nightChargeLimitPct.toFloat()) }
+
+                Text("Belirtilen saatler arasında şarj limitini düşürerek batarya ömrünü korur.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(10.dp))
+                ControlRow(
+                    label = "Gece Şarj Modu",
+                    description = "%02d:00 - %02d:00 arası %%%d ile sınırla".format(startHour, endHour, limitPct.toInt()),
+                    checked = state.nightChargeEnabled,
+                    onCheckedChange = { vm.setNightCharge(it, startHour, endHour, limitPct.toInt()) }
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Başlangıç Saati",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            listOf(21, 22, 23).forEach { h ->
+                                FilterChip(
+                                    selected = startHour == h,
+                                    onClick = { startHour = h; vm.setNightCharge(state.nightChargeEnabled, h, endHour, limitPct.toInt()) },
+                                    label = { Text("$h:00", style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Bitiş Saati",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            listOf(6, 7, 8).forEach { h ->
+                                FilterChip(
+                                    selected = endHour == h,
+                                    onClick = { endHour = h; vm.setNightCharge(state.nightChargeEnabled, startHour, h, limitPct.toInt()) },
+                                    label = { Text("$h:00", style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                SliderRow(
+                    label = "Gece Şarj Limiti",
+                    value = limitPct,
+                    valueRange = 60f..90f,
+                    steps = 5,
+                    displayValue = "${limitPct.toInt()}%",
+                    onValueChangeFinished = {
+                        limitPct = it
+                        vm.setNightCharge(state.nightChargeEnabled, startHour, endHour, it.toInt())
+                    }
+                )
+            }
+        }
     }
 }

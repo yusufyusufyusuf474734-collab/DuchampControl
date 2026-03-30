@@ -224,6 +224,60 @@ fun NetworkScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modif
         item {
             HostsEditorCard(vm)
         }
+
+        // Ping testi
+        item {
+            SectionCard("Ping Testi", Icons.Default.NetworkCheck,
+                badge = if (state.pingResults.isNotEmpty()) "Tamamlandı" else null) {
+                Text("Popüler DNS sunucularına gecikme ölçümü yapın.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = { vm.runPingTest() },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.pingRunning
+                ) {
+                    if (state.pingRunning) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Test Çalışıyor...")
+                    } else {
+                        Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Ping Testi Başlat")
+                    }
+                }
+                if (state.pingResults.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    state.pingResults.forEach { (label, result) ->
+                        val isTimeout = result.contains("aşımı")
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (isTimeout) Icons.Default.ErrorOutline else Icons.Default.CheckCircle,
+                                null,
+                                modifier = Modifier.size(14.dp),
+                                tint = if (isTimeout) MaterialTheme.colorScheme.error
+                                       else MaterialTheme.colorScheme.tertiary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(label,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            StatusBadge(result,
+                                if (isTimeout) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.tertiary)
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), thickness = 0.5.dp)
+                    }
+                }
+            }
+        }
     }
 }
 

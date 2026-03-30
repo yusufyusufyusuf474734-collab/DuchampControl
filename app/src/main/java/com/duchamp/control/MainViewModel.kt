@@ -35,6 +35,12 @@ class MainViewModel(private val context: Context) : ViewModel() {
             gameApps = AppPrefs.loadGameApps(),
             thermalAlertEnabled = AppPrefs.thermalAlertEnabled,
             thermalAlertTempC = AppPrefs.thermalAlertTempC,
+            chargeNotifyEnabled = AppPrefs.chargeNotifyEnabled,
+            chargeNotifyPct = AppPrefs.chargeNotifyPct,
+            nightChargeEnabled = AppPrefs.nightChargeEnabled,
+            nightChargeStartHour = AppPrefs.nightChargeStartHour,
+            nightChargeEndHour = AppPrefs.nightChargeEndHour,
+            nightChargeLimitPct = AppPrefs.nightChargeLimitPct,
             kernelKitInstalled = KernelKitInstaller.isInstalled(),
             kernelKitEnabled = KernelKitInstaller.isEnabled()
         )
@@ -640,6 +646,124 @@ class MainViewModel(private val context: Context) : ViewModel() {
     fun getBackupPath(): String? {
         val f = java.io.File("/sdcard/DimensityTool/backup.json")
         return if (f.exists()) f.absolutePath else null
+    }
+
+    // Prop editörü - tüm prop'ları listele
+    fun loadAllProps() = update {
+        val raw = RootUtils.runCommand("getprop")
+        val map = raw.lines().mapNotNull { line ->
+            val m = Regex("\\[(.+?)\\]: \\[(.*)\\]").find(line)
+            m?.let { it.groupValues[1] to it.groupValues[2] }
+        }.toMap()
+        _state.value.copy(allProps = map)
+    }
+
+    // Sistem bilgisi paylaşımı
+    fun buildSystemShareText(): String {
+        val s = _state.value
+        return buildString {
+            appendLine("=== DimensityTool Sistem Raporu ===")
+            appendLine("Cihaz: Poco X6 Pro 5G (duchamp)")
+            appendLine("SoC: MediaTek Dimensity 8300 Ultra (MT6897)")
+            appendLine("Android: ${s.deviceBasic["Android"] ?: "N/A"}")
+            appendLine("Build: ${s.deviceBasic["Build"] ?: "N/A"}")
+            appendLine()
+            s.cpuInfo?.let {
+                appendLine("CPU Governor: ${it.governor}")
+                appendLine("Prime Frekans: ${it.clusterPrime.curFreqMhz}")
+                appendLine("Big Frekans: ${it.clusterBig.curFreqMhz}")
+                appendLine("Little Frekans: ${it.clusterLittle.curFreqMhz}")
+            }
+            s.gpuInfo?.let { appendLine("GPU: ${it.curFreqMhz} / ${it.governor}") }
+            s.batteryInfo?.let {
+                appendLine("Batarya: ${it.capacity}% / ${it.status} / ${it.tempC}")
+            }
+            s.memInfo?.let {
+                appendLine("RAM: ${it.usedMb}/${it.totalMb} MB")
+                appendLine("Swappiness: ${it.swappiness}")
+            }
+            s.systemInfo?.let {
+                appendLine("Kernel: ${it.kernelVersion}")
+                appendLine("SELinux: ${it.selinuxMode}")
+                appendLine("Uptime: ${it.uptime}")
+            }
+            appendLine("Root: ${s.rootInfo?.rootType ?: "N/A"} ${s.rootInfo?.version ?: ""}")
+            appendLine("Aktif Profil: ${s.activeProfileId}")
+        }
+    }
+
+    // Pil bildirimi
+    fun setChargeNotify(enabled: Boolean, pct: Int) {
+        AppPrefs.chargeNotifyEnabled = enabled
+        AppPrefs.chargeNotifyPct = pct
+        _state.value = _state.value.copy(chargeNotifyEnabled = enabled, chargeNotifyPct = pct,
+            statusMessage = if (enabled) "Pil bildirimi aktif: %$pct" else "Pil bildirimi kapatıldı")
+    }
+
+    // Gece şarj modu
+    fun setNightCharge(enabled: Boolean, startHour: Int, endHour: Int, limitPct: Int) {
+        AppPrefs.nightChargeEnabled = enabled
+        AppPrefs.nightChargeStartHour = startHour
+        AppPrefs.nightChargeEndHour = endHour
+        AppPrefs.nightChargeLimitPct = limitPct
+        _state.value = _state.value.copy(
+            nightChargeEnabled = enabled,
+            nightChargeStartHour = startHour,
+            nightChargeEndHour = endHour,
+            nightChargeLimitPct = limitPct,
+            statusMessage = if (enabled) "Gece şarj modu aktif: %02d:00-%02d:00 → %%%d".format(startHour, endHour, limitPct)
+                            else "Gece şarj modu kapatıldı"
+        )
+    }
+
+    // Ping testi
+    fun runPingTest() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.value = _state.value.copy(pingRunning = true)
+            val targets = mapOf(
+                "Google (8.8.8.8)"      to "8.8.8.8",
+                "Cloudflare (1.1.1.1)"  to "1.1.1.1",
+                "Quad9 (9.9.9.9)"       to "9.9.9.9",
+                "Google DNS (8.8.4.4)"  to "8.8.4.4"
+            )
+            val results = targets.mapValues { (_, ip) ->
+                val out = RootUtils.runCommand("ping -c 3 -W 2 $ip 2>/dev/null | tail -1")
+                if (out.contains("avg")) {
+                    val avg = out.substringAfter("/").substringBefore("/")
+                    "${avg.trim()} ms"
+                } else "Zaman aşımı"
+            }
+            _state.value = _state.value.copy(pingResults = results, pingRunning = false)
+        }
+    }
+
+    // APK yedekleme
+    fun backupApk(packageName: String, appLabel: String) = update {
+        val apkPath = RootUtils.runCommand("pm path $packageName | cut -d: -f2").trim()
+        if (apkPath.isNotBlank()) {
+            val dir = "/sdcard/DimensityTool/apk"
+            RootUtils.runCommand("mkdir -p $dir")
+            RootUtils.runCommand("cp $apkPath $dir/${appLabel.replace(" ", "_")}.apk")
+            _state.value.copy(apkBackupStatus = "APK kaydedildi: $dir/${appLabel}.apk",
+                statusMessage = "APK yedeklendi: $appLabel")
+        } else {
+            _state.value.copy(apkBackupStatus = "APK bulunamadı: $packageName")
+        }
+    }
+
+    // Uygulama boyut analizi
+    fun loadAppSizes() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val apps = _state.value.installedApps.ifEmpty {
+                AppManager.getInstalledApps(false)
+            }
+            val sizes = apps.map { app ->
+                val size = RootUtils.runCommand("du -sb /data/data/${app.packageName} 2>/dev/null | awk '{print $1}'")
+                    .toLongOrNull() ?: 0L
+                app.label to size
+            }.sortedByDescending { it.second }
+            _state.value = _state.value.copy(appSizeList = sizes)
+        }
     }
 
     override fun onCleared() {

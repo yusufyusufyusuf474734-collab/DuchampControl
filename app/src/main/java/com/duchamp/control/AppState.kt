@@ -77,5 +77,24 @@ data class AppState(
     val thermalAlertTempC: Int = 75,
     // Önyükleme scripti
     val bootScriptExists: Boolean = false,
-    val bootScriptContent: String = ""
+    val bootScriptContent: String = "",
+    // Prop editörü
+    val allProps: Map<String, String> = emptyMap(),
+    // Sistem bilgisi paylaşımı
+    val systemShareText: String = "",
+    // Pil bildirimi
+    val chargeNotifyEnabled: Boolean = false,
+    val chargeNotifyPct: Int = 80,
+    // Gece şarj modu
+    val nightChargeEnabled: Boolean = false,
+    val nightChargeStartHour: Int = 23,
+    val nightChargeEndHour: Int = 7,
+    val nightChargeLimitPct: Int = 80,
+    // Ağ hız testi
+    val pingResults: Map<String, String> = emptyMap(),
+    val pingRunning: Boolean = false,
+    // APK yedekleme
+    val apkBackupStatus: String = "",
+    // Uygulama boyut analizi
+    val appSizeList: List<Pair<String, Long>> = emptyList()
 )

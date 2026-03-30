@@ -43,7 +43,8 @@ fun AppManagerScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mo
             onEnable = { vm.enableApp(app.packageName); selectedApp = null },
             onUninstall = { vm.uninstallApp(app.packageName); selectedApp = null },
             onFreeze = { vm.freezeApp(app.packageName); selectedApp = null },
-            onUnfreeze = { vm.unfreezeApp(app.packageName); selectedApp = null }
+            onUnfreeze = { vm.unfreezeApp(app.packageName); selectedApp = null },
+            onBackupApk = { vm.backupApk(app.packageName, app.label); selectedApp = null }
         )
     }
 
@@ -90,11 +91,16 @@ fun AppManagerScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Mo
                         }
                     )
                 }
-                if (state.appsLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    IconButton(onClick = { vm.loadApps(showSystem) }) {
-                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (state.appsLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = { vm.loadApps(showSystem) }) {
+                            Icon(Icons.Default.Refresh, null, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    IconButton(onClick = { vm.loadAppSizes() }) {
+                        Icon(Icons.Default.Analytics, null, modifier = Modifier.size(20.dp))
                     }
                 }
             }
@@ -225,7 +231,8 @@ fun AppDetailDialog(
     onEnable: () -> Unit,
     onUninstall: () -> Unit,
     onFreeze: () -> Unit,
-    onUnfreeze: () -> Unit
+    onUnfreeze: () -> Unit,
+    onBackupApk: () -> Unit
 ) {
     var showUninstallConfirm by remember { mutableStateOf(false) }
     var showClearConfirm by remember { mutableStateOf(false) }
@@ -327,21 +334,12 @@ fun AppDetailDialog(
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (app.isEnabled) {
-                    AppActionButton(
-                        icon = Icons.Default.Block,
-                        label = "Devre Dışı",
-                        onClick = onDisable,
-                        modifier = Modifier.weight(1f)
-                    )
-                } else {
-                    AppActionButton(
-                        icon = Icons.Default.CheckCircle,
-                        label = "Etkinleştir",
-                        onClick = onEnable,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                AppActionButton(
+                    icon = Icons.Default.Archive,
+                    label = "APK Yedekle",
+                    onClick = onBackupApk,
+                    modifier = Modifier.weight(1f)
+                )
                 AppActionButton(
                     icon = Icons.Default.AcUnit,
                     label = "Dondur",

@@ -198,6 +198,32 @@ object AppPrefs {
         get() = prefs.getInt("thermal_alert_temp", 75)
         set(v) { prefs.edit().putInt("thermal_alert_temp", v).apply() }
 
+    // Pil bildirimi
+    var chargeNotifyEnabled: Boolean
+        get() = prefs.getBoolean("charge_notify_enabled", false)
+        set(v) { prefs.edit().putBoolean("charge_notify_enabled", v).apply() }
+
+    var chargeNotifyPct: Int
+        get() = prefs.getInt("charge_notify_pct", 80)
+        set(v) { prefs.edit().putInt("charge_notify_pct", v).apply() }
+
+    // Gece şarj modu
+    var nightChargeEnabled: Boolean
+        get() = prefs.getBoolean("night_charge_enabled", false)
+        set(v) { prefs.edit().putBoolean("night_charge_enabled", v).apply() }
+
+    var nightChargeStartHour: Int
+        get() = prefs.getInt("night_charge_start", 23)
+        set(v) { prefs.edit().putInt("night_charge_start", v).apply() }
+
+    var nightChargeEndHour: Int
+        get() = prefs.getInt("night_charge_end", 7)
+        set(v) { prefs.edit().putInt("night_charge_end", v).apply() }
+
+    var nightChargeLimitPct: Int
+        get() = prefs.getInt("night_charge_limit", 80)
+        set(v) { prefs.edit().putInt("night_charge_limit", v).apply() }
+
     fun saveScheduleRules(rules: List<ScheduleRule>) {
         val json = buildString {
             append("[")
