@@ -1,5 +1,7 @@
 package com.duchamp.control.ui
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -14,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.duchamp.control.AppState
 import com.duchamp.control.MainViewModel
 import com.duchamp.control.PerformanceProfiles
+import com.duchamp.control.ui.theme.FadeInAnimation
 
 @Composable
 fun DashboardScreen(state: AppState, vm: MainViewModel, modifier: Modifier = Modifier) {

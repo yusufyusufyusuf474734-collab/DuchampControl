@@ -13,7 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.duchamp.control.ui.DuchampApp
-import com.duchamp.control.ui.theme.DuchampControlTheme
+import com.duchamp.control.ui.theme.ModernDuchampTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -29,12 +29,11 @@ class MainActivity : ComponentActivity() {
                 AppTheme.LIGHT  -> false
                 AppTheme.SYSTEM -> isSystemInDarkTheme()
             }
-            DuchampControlTheme(
-                darkTheme = isDark,
-                accentColor = accentColors[state.accentColorIndex].color
-            ) {
-                Surface(modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background) {
+            ModernDuchampTheme(darkTheme = isDark) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     DuchampApp(vm)
                 }
             }

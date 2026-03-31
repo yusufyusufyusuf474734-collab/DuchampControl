@@ -1,5 +1,7 @@
 package com.duchamp.control.ui
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.duchamp.control.MainViewModel
+import com.duchamp.control.ui.theme.FadeInAnimation
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -232,7 +235,7 @@ fun DuchampApp(vm: MainViewModel) {
             containerColor = MaterialTheme.colorScheme.background,
             contentWindowInsets = WindowInsets(0)
         ) { padding ->
-            if (state.isLoading) {
+            FadeInAnimation(visible = state.isLoading) {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(
@@ -245,14 +248,24 @@ fun DuchampApp(vm: MainViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                return@Scaffold
             }
-            if (!state.isRooted) {
+            if (state.isLoading) return@Scaffold
+            
+            FadeInAnimation(visible = !state.isRooted) {
                 NoRootScreen(Modifier.padding(padding))
-                return@Scaffold
             }
+            if (!state.isRooted) return@Scaffold
+            
             val m = Modifier.padding(padding)
-            when (currentScreen) {
+            AnimatedContent(
+                targetState = currentScreen,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(300)) togetherWith
+                    fadeOut(animationSpec = tween(300))
+                },
+                label = "screen_transition"
+            ) { screen ->
+                when (screen) {
                 Screen.Dashboard    -> DashboardScreen(state, vm, m)
                 Screen.LiveMonitor  -> LiveMonitorScreen(state, vm, m)
                 Screen.Profiles     -> ProfilesScreen(state, vm, m)
@@ -292,6 +305,7 @@ fun DuchampApp(vm: MainViewModel) {
                 Screen.StressTest   -> StressTestScreen(state, vm, m)
                 Screen.About        -> AboutScreen(m)
                 else                -> DashboardScreen(state, vm, m)
+                }
             }
         }
     }
